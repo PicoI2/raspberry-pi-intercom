@@ -1,0 +1,15 @@
+{
+    "files.associations": {
+        "*.ipp": "cpp",
+        "ratio": "cpp",
+        "system_error": "cpp",
+        "type_traits": "cpp",
+        "bitset": "cpp",
+        "chrono": "cpp",
+        "iostream": "cpp",
+        "condition_variable": "cpp",
+        "thread": "cpp",
+        "mutex": "cpp",
+        "functional": "cpp"
+    }
+}
