@@ -2,43 +2,33 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <string.h>
+#include <boost/bind.hpp>
 #include "udplisten.h"
-
-using namespace std;
 
 CUdpListen UdpListen;
 
-bool CUdpListen::Start (void)
+bool CUdpListen::Start (boost::asio::io_service* apIoService)
 {
-    mSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    cout << "mSocket: " << mSocket << endl;
-
-    sockaddr_in LocalAdress;
-    memset((char *) &LocalAdress, 0, sizeof(LocalAdress));
-    LocalAdress.sin_family = AF_INET;
-    LocalAdress.sin_addr.s_addr = INADDR_ANY;
-    LocalAdress.sin_port = htons(12012);
-    int ret = bind(mSocket, (sockaddr *) &LocalAdress, sizeof(LocalAdress));
-    cout << "bind return: " << ret << endl;
-            
-	mpThread = new thread(&CUdpListen::Thread, this);
+    udp::endpoint endpoint(boost::asio::ip::address::from_string("127.0.0.1"), 12012);
+	mpSocket = new udp::socket(*apIoService, endpoint);
+	StartListening();
     return true;
 }
 
-void CUdpListen::Thread (void)
+void CUdpListen::StartListening (void)
 {
-    int ReceiveLen;
-    char buffer [256];
-    while (1) {
-        sockaddr_in Client;
-        socklen_t SizeClient = sizeof(Client);
-        ReceiveLen = recvfrom(mSocket, &buffer, sizeof(buffer), 0, (struct sockaddr *)&Client, &SizeClient);
-        cout << "Receive : " << buffer << endl;
+    mpSocket->async_receive_from(
+        boost::asio::buffer(mBuffer), mRemoteEndPoint,
+        boost::bind(&CUdpListen::ReceiveFrom, this,
+        boost::asio::placeholders::error,
+        boost::asio::placeholders::bytes_transferred));
+}
 
-        char address[20];
-        inet_ntop(AF_INET, &(Client.sin_addr), address, sizeof(address));
-        cout << "From : " << address << endl;
-    }
+void CUdpListen::ReceiveFrom (const boost::system::error_code& error, std::size_t bytes_transferred)
+{
+    std::string message(mBuffer.begin(), mBuffer.begin()+bytes_transferred);
+    cout << "Receive : " << message << "From : " << mRemoteEndPoint << endl;
+    StartListening();
 }
 
 void CUdpListen::OpenDoor (void)

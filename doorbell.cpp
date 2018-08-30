@@ -3,24 +3,19 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
-#include <arpa/inet.h>
 #include <string.h>
 
 #include "doorbell.h"
 #include "udplisten.h"
 
-// #include <mutex>
-// #include <condition_variable>
-
 using namespace std;
-
-// extern mutex mtx;
-// extern condition_variable cv;
+using boost::asio::ip::udp;
 
 CDoorBell DoorBell;
 
-bool CDoorBell::Start (void)
+bool CDoorBell::Start (boost::asio::io_service* apIoService)
 {
+	mpIoService = apIoService;
     mFd = open ("value" , O_RDWR);
 
     char c;
@@ -33,9 +28,9 @@ bool CDoorBell::Start (void)
     return true;
 }
 
-
 void CDoorBell::Thread (void)
 {
+	pthread_setname_np(pthread_self(), "CDoorBell::Thread");
     // Setup poll structure
 	struct pollfd polls;
 	polls.fd = mFd;
@@ -50,14 +45,13 @@ void CDoorBell::Thread (void)
 			x = poll(&polls, 1, 1000);
 			cout << "x:" << x << endl;
 
-            // std::unique_lock<std::mutex> lck(mtx);
-            // cv.notify_one();
+            SendNotification();	// TODO REMOVE
 		}
 		if (x > 0)
 		{
             SendNotification();
 			lseek(mFd, 0, SEEK_SET);	// Rewind
-			
+
 			read(mFd, &c, 1); // Read & clear
 			cout << "c:" << c << endl;
 		}
@@ -66,13 +60,8 @@ void CDoorBell::Thread (void)
 
 void CDoorBell::SendNotification (void)
 {
-    sockaddr_in DestAdress;
-    memset((char *) &DestAdress, 0, sizeof(DestAdress));
-    DestAdress.sin_family = AF_INET;
-    DestAdress.sin_port = htons(12012);
-    DestAdress.sin_addr.s_addr = INADDR_ANY;
-    inet_aton("127.0.0.1", &DestAdress.sin_addr);
-    
-    char buffer[] = "doorbell\n";
-    sendto(UdpListen.mSocket, &buffer, sizeof(buffer), 0, (struct sockaddr *)&DestAdress, sizeof(DestAdress));
+	char message[] = "doorbell\n";
+	udp::endpoint endpoint(boost::asio::ip::address::from_string("127.0.0.1"), 12012);
+	udp::socket socket(*mpIoService, udp::endpoint(udp::v4(), 0));
+	socket.send_to(boost::asio::buffer(message, sizeof(message)), endpoint);
 }
