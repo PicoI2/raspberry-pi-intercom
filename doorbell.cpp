@@ -5,6 +5,8 @@
 #include <unistd.h>
 #include <string.h>
 
+#include <boost/bind.hpp>
+
 #include "doorbell.h"
 #include "udplisten.h"
 
@@ -15,53 +17,54 @@ CDoorBell DoorBell;
 
 bool CDoorBell::Start (boost::asio::io_service* apIoService)
 {
-	mpIoService = apIoService;
+    mpIoService = apIoService;
     mFd = open ("value" , O_RDWR);
 
     char c;
-	size_t count;
-	if (ioctl (mFd, FIONREAD, &count) != -1)
-	for (int i = 0 ; i < count ; i++) // Clear any initial pending interrupt
-		read(mFd, &c, 1); // Catch value to suppress compiler unused warning
+    size_t count;
+    if (ioctl (mFd, FIONREAD, &count) != -1)
+    for (int i = 0 ; i < count ; i++) // Clear any initial pending interrupt
+        read(mFd, &c, 1); // Catch value to suppress compiler unused warning
 
-	mpThread = new thread(&CDoorBell::Thread, this);
+    // Setup poll structure
+    mPolls.fd = mFd;
+    mPolls.events = POLLPRI;
+    mPolls.revents = POLLERR | POLLNVAL;
+
+    mpInterval = new boost::posix_time::millisec(1000);
+    mpTimer = new boost::asio::deadline_timer(*mpIoService, *mpInterval);
+    mpTimer->async_wait(boost::bind(&CDoorBell::Thread, this));
+    // mpTimer->async_wait([this]{Thread();});
+    
     return true;
 }
 
 void CDoorBell::Thread (void)
 {
-	pthread_setname_np(pthread_self(), "CDoorBell::Thread");
-    // Setup poll structure
-	struct pollfd polls;
-	polls.fd = mFd;
-	polls.events = POLLPRI;
-	polls.revents = POLLERR | POLLNVAL;
+    char c;
+    cout << "poll..." << endl;
+    int x = poll(&mPolls, 1, 0);
+    cout << "x:" << x << endl;
 
-	char c;
-	int x = 0;
-	while (true) {
-		while (x == 0)
-		{
-			x = poll(&polls, 1, 1000);
-			cout << "x:" << x << endl;
+    SendNotification();	// TODO REMOVE
+    if (x > 0)
+    {
+        SendNotification();
+        lseek(mFd, 0, SEEK_SET);	// Rewind
 
-            SendNotification();	// TODO REMOVE
-		}
-		if (x > 0)
-		{
-            SendNotification();
-			lseek(mFd, 0, SEEK_SET);	// Rewind
+        read(mFd, &c, 1); // Read & clear
+        cout << "c:" << c << endl;
+    }
 
-			read(mFd, &c, 1); // Read & clear
-			cout << "c:" << c << endl;
-		}
-	}
+    // Reschedule the timer in the future:
+    mpTimer->expires_at(mpTimer->expires_at() + *mpInterval);
+    mpTimer->async_wait(boost::bind(&CDoorBell::Thread, this));
 }
 
 void CDoorBell::SendNotification (void)
 {
-	char message[] = "doorbell\n";
-	udp::endpoint endpoint(boost::asio::ip::address::from_string("127.0.0.1"), 12012);
-	udp::socket socket(*mpIoService, udp::endpoint(udp::v4(), 0));
-	socket.send_to(boost::asio::buffer(message, sizeof(message)), endpoint);
+    char message[] = "doorbell\n";
+    udp::endpoint endpoint(boost::asio::ip::address::from_string("127.0.0.1"), 12012);
+    udp::socket socket(*mpIoService, udp::endpoint(udp::v4(), 0));
+    socket.send_to(boost::asio::buffer(message, sizeof(message)), endpoint);
 }

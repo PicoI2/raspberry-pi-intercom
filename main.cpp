@@ -16,15 +16,5 @@ int main (int argc, char** argv)
 
     io_service.run();
 
-	// int ret;
-    // cout << "Waiting" << endl;
-    // {
-    //     std::unique_lock<std::mutex> lck(mtx);
-    //     cv.wait(lck);
-    // }
-
-    // cout << "End waiting, return " << ret << endl;
-    
-	DoorBell.mpThread->join();
 	return 0;
 }
