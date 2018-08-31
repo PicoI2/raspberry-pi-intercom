@@ -13,8 +13,8 @@ CRequestHandler::CRequestHandler(CHttpRequest& aHttpRequest)
 string& CRequestHandler::Response()
 {
     mResponse = http::code::NOT_FOUND;
-    if (mHttpRequest.mMethod == http::method::GET && !mHttpRequest.mMimeType.empty()) {
-        ifstream RequestedFile("." + mHttpRequest.mUri, std::ios::in | std::ios::binary);
+    if (mHttpRequest.mMethod == http::method::GET && !mHttpRequest.mMimeType.empty() && string::npos == mHttpRequest.mUri.find("..")) {
+        ifstream RequestedFile("./www/" + mHttpRequest.mUri, std::ios::in | std::ios::binary);
         if (RequestedFile.is_open()) {
             mResponse = http::code::OK;
             mResponse.append("Content-Type: " + mHttpRequest.mMimeType + "\r\n\r\n");
