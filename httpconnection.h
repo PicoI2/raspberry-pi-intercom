@@ -37,4 +37,5 @@ private:
 	std::array<char, MAX_REQUEST_SIZE> mBuffer;
 	std::string mClientAsString;	// somthing like 127.0.0.1:45677
 	std::string mRequest;		// Complete request
+	std::vector<boost::asio::const_buffer> replyBuffers;
 };

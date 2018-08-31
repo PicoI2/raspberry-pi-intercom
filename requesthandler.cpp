@@ -14,14 +14,17 @@ string& CRequestHandler::Response()
 {
     mResponse = http::code::NOT_FOUND;
     if (mHttpRequest.mMethod == http::method::GET && !mHttpRequest.mMimeType.empty()) {
-        ifstream RequestedFile("." + mHttpRequest.mUri);
+        ifstream RequestedFile("." + mHttpRequest.mUri, std::ios::in | std::ios::binary);
         if (RequestedFile.is_open()) {
-            stringstream Response;
-            Response << http::code::OK;
-            Response << "Content-Type: " << mHttpRequest.mMimeType << "\r\n\r\n";
-            Response << RequestedFile.rdbuf();
-            mResponse = Response.str();
+            mResponse = http::code::OK;
+            mResponse.append("Content-Type: " + mHttpRequest.mMimeType + "\r\n\r\n");
+            char buffer [1024];
+            while (RequestedFile.read(buffer, sizeof(buffer)).gcount() > 0) {
+                mResponse.append(buffer, RequestedFile.gcount());
+            }
         }
     }
+    cout << "Response size: " << mResponse.size();
     return mResponse;
+
 }

@@ -7,29 +7,30 @@ namespace mime {
 
 struct ExtensionToMime
 {
-	string Extension;
-	string Mime;
+    string Extension;
+    string Mime;
 };
 ExtensionToMime ExtensionsArray[] = {
-	{"css", CSS},
-	{"html", HTML},
-	{"js", JS},
+    {"css", CSS},
+    {"html", HTML},
+    {"js", JS},
 };
 
-string GetMimeType(string aExtension)
+string GetMimeType(string aUri)
 {
-	string Extension = aExtension;
-	boost::algorithm::to_lower(Extension);
+    string Extension = aUri.substr(aUri.find_last_of('.'));
+    if (Extension.size()>1) {
+        Extension = Extension.substr(1);	// Remove the '.'
+    }
+    boost::algorithm::to_lower(Extension);
 
-	ExtensionToMime Ext;
-	for (size_t i=0; i< sizeof (ExtensionsArray) / sizeof(http::mime::ExtensionsArray[0]); ++i) {
-		Ext = ExtensionsArray[i];
-		if (Extension == Ext.Extension) {
-			return Ext.Mime;
-		}
-	}
+    for (ExtensionToMime Ext : ExtensionsArray) {
+        if (Extension == Ext.Extension) {
+            return Ext.Mime;
+        }
+    }
 
-	return "";
+    return "";
 }
 
 }
