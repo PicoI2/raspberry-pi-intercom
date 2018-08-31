@@ -15,6 +15,7 @@ set (SOURCE_FILES
    httpconnection.cpp;
    httprequest.cpp;
    requesthandler.cpp;
+   http.cpp;
 )
 
 add_executable(rpi-intercom ${SOURCE_FILES})

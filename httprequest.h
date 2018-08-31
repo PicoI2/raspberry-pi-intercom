@@ -13,5 +13,6 @@ public:
 	string& mRequest;
 	string mMethod;
 	string mUri;
+	string mMimeType;
 	map<string, string> mHeaderMap;
 };

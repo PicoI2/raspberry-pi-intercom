@@ -1,6 +1,7 @@
 #include <iostream>
 #include <regex>
 #include "httprequest.h"
+#include "http.h"
 
 using namespace std;
 
@@ -27,11 +28,15 @@ void CHttpRequest::Parse ()
 			bRes = true;
 		}
 	}
-	while (getline(RequestLines, RequestLine)) {
-		regex Regex("([^ :]+): *(.+)");
-		smatch Matches;
-		if (regex_search(RequestLine, Matches, Regex)) {
-			mHeaderMap[Matches[1]] = Matches[2];
+	if (bRes) {
+		while (getline(RequestLines, RequestLine)) {
+			regex Regex("([^ :]+): *(.+)");
+			smatch Matches;
+			if (regex_search(RequestLine, Matches, Regex)) {
+				mHeaderMap[Matches[1]] = Matches[2];
+			}
 		}
+
+		mMimeType = http::mime::GetMimeType(mUri.substr(mUri.find_last_of('.')));
 	}
 }

@@ -19,4 +19,11 @@ namespace http {
 		const static string BAD_REQUEST = "HTTP/1.1 400 Bad Request\r\n";
 		const static string NOT_FOUND = "HTTP/1.1 404 Not Found\r\n";
 	}
+	namespace mime {
+		const static string JS   = "application/javascript\r\n";
+		const static string CSS  = "text/css\r\n";
+		const static string HTML = "text/html\r\n";
+
+		string GetMimeType(string aExtension);
+	}
 }
