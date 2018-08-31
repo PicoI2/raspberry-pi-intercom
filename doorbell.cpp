@@ -57,7 +57,8 @@ void CDoorBell::Thread (void)
     }
 
     // Reschedule the timer in the future:
-    mpTimer->expires_at(mpTimer->expires_at() + *mpInterval);
+    //mpTimer->expires_at(mpTimer->expires_at() + *mpInterval);
+    mpTimer->expires_from_now(*mpInterval);
     mpTimer->async_wait(boost::bind(&CDoorBell::Thread, this));
 }
 

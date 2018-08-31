@@ -11,6 +11,10 @@ set (SOURCE_FILES
    main.cpp;
    doorbell.cpp;
    udplisten.cpp;
+   httpserver.cpp;
+   httpconnection.cpp;
+   httprequest.cpp;
+   requesthandler.cpp;
 )
 
 add_executable(rpi-intercom ${SOURCE_FILES})
