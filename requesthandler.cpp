@@ -3,6 +3,7 @@
 #include <sstream>
 #include "requesthandler.h"
 #include "http.h"
+#include "dooropen.h"
 
 // Constructor
 CRequestHandler::CRequestHandler(CHttpRequest& aHttpRequest)
@@ -24,7 +25,14 @@ string& CRequestHandler::Response()
             }
         }
     }
-    cout << "Response size: " << mResponse.size();
+    else if (mHttpRequest.mMethod == http::method::PUT) {
+        if ("/dooropen" == mHttpRequest.mUri) {
+            if (DoorOpen.Open()) {
+                mResponse = http::code::OK;
+            }
+        }
+    }
+    // cout << "Response size: " << mResponse.size() << endl;
     return mResponse;
 
 }

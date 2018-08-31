@@ -8,14 +8,15 @@ set(BOOST_MIN_VERSION "1.39.0")
 find_package(Boost ${BOOST_MIN_VERSION} REQUIRED COMPONENTS system)
 
 set (SOURCE_FILES
-   main.cpp;
-   doorbell.cpp;
-   udplisten.cpp;
-   httpserver.cpp;
-   httpconnection.cpp;
-   httprequest.cpp;
-   requesthandler.cpp;
-   http.cpp;
+    doorbell.cpp;
+    dooropen.cpp;
+    http.cpp;
+    httpconnection.cpp;
+    httprequest.cpp;
+    httpserver.cpp;
+    main.cpp;
+    requesthandler.cpp;
+    udplisten.cpp;
 )
 
 add_executable(rpi-intercom ${SOURCE_FILES})

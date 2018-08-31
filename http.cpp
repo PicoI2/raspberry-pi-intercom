@@ -18,15 +18,18 @@ ExtensionToMime ExtensionsArray[] = {
 
 string GetMimeType(string aUri)
 {
-    string Extension = aUri.substr(aUri.find_last_of('.'));
-    if (Extension.size()>1) {
-        Extension = Extension.substr(1);	// Remove the '.'
-    }
-    boost::algorithm::to_lower(Extension);
+    size_t PosLastDot = aUri.find_last_of('.');
+    if (string::npos != PosLastDot) {
+        string Extension = aUri.substr(PosLastDot);
+        if (Extension.size()>1) {
+            Extension = Extension.substr(1);	// Remove the '.'
+        }
+        boost::algorithm::to_lower(Extension);
 
-    for (ExtensionToMime Ext : ExtensionsArray) {
-        if (Extension == Ext.Extension) {
-            return Ext.Mime;
+        for (ExtensionToMime Ext : ExtensionsArray) {
+            if (Extension == Ext.Extension) {
+                return Ext.Mime;
+            }
         }
     }
 

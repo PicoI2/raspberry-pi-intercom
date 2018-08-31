@@ -18,7 +18,7 @@ CDoorBell DoorBell;
 bool CDoorBell::Start (boost::asio::io_service* apIoService)
 {
     mpIoService = apIoService;
-    mFd = open ("value" , O_RDWR);
+    mFd = open ("todotoremplace" , O_RDWR);
 
     char c;
     size_t count;

@@ -1,5 +1,4 @@
 #pragma once
-#include <thread>
 #include <boost/asio.hpp>
 
 using namespace std;

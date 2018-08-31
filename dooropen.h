@@ -2,16 +2,18 @@
 #include <boost/asio.hpp>
 using namespace std;
 
-class CDoorBell {
+class CDoorOpen {
 public :
     bool Start (boost::asio::io_service* apIoService);
-    void Thread (void);
-    void SendNotification (void);
-    int mFd;
+    bool Open (void);
+    void EndTimer (void);
+    bool Write (char c);
+
     boost::asio::io_service* mpIoService;
     boost::asio::deadline_timer* mpTimer;
-    struct pollfd mPolls;
-    boost::posix_time::millisec* mpInterval;
+    boost::posix_time::seconds* mpInterval;
 };
 
-extern CDoorBell DoorBell;
+extern CDoorOpen DoorOpen;
+
+
