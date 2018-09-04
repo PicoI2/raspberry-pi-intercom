@@ -1,5 +1,6 @@
 #pragma once
 #include <boost/asio.hpp>
+#include <boost/signals2.hpp>
 using namespace std;
 
 class CIO {
@@ -8,8 +9,9 @@ public :
     bool AddInput (int aGpio);
     
     void OnTimer (void);
-    void SendNotification (int aGpio);
-    void WatchInputs (bool abSend);
+    void WatchInputs (bool abSendSignal);
+
+    boost::signals2::signal <void (const int aGpio, const char aValue)> InputSignal;
     
     int mEpoll;
     boost::asio::io_service* mpIoService;

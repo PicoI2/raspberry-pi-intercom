@@ -55,7 +55,7 @@ bool CIO::AddInput (int aGpio)
     return bRes;
 }
 
-void CIO::WatchInputs (bool abSend)
+void CIO::WatchInputs (bool abSendSignal)
 {
     epoll_event Event;
     while (0 < epoll_wait(mEpoll, &Event, 1, 0)) {
@@ -64,8 +64,8 @@ void CIO::WatchInputs (bool abSend)
         read(Event.data.fd, &Value, 1);
         int Gpio = (Event.data.u64>>32);
         cout << "Event on input " << Gpio << " value: " << Value << endl;
-        if (abSend) {
-            SendNotification(Gpio);
+        if (abSendSignal) {
+            InputSignal(Gpio, Value);
         }
     }
 }
@@ -77,9 +77,4 @@ void CIO::OnTimer (void)
     // Reschedule the timer in the future:
     mpTimer->expires_from_now(*mpInterval);
     mpTimer->async_wait(boost::bind(&CIO::OnTimer, this));
-}
-
-void CIO::SendNotification (int aGpio)
-{
-    // TODO
 }
