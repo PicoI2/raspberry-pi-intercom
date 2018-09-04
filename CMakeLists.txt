@@ -17,12 +17,12 @@ set (SOURCE_FILES
     io.cpp;
     main.cpp;
     requesthandler.cpp;
-    udplisten.cpp;
+    udp.cpp;
 )
 
 set (SOURCE_FILES_CLIENT
     main.cpp;
-    udplisten.cpp;
+    udp.cpp;
 )
 
 add_executable(rpi-intercom ${SOURCE_FILES})

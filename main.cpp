@@ -2,7 +2,7 @@
 
 #include "doorbell.h"
 #include "dooropen.h"
-#include "udplisten.h"
+#include "udp.h"
 #include "httpserver.h"
 #include "io.h"
 
@@ -25,6 +25,12 @@ int main (int argc, char** argv)
     IO.Start(&io_service);
     IO.AddInput(20);
     IO.AddInput(21);
+
+    // TEST
+    IO.InputSignal.connect([](const int aGpio, const char aValue){
+        cout << "InputSignal " << aGpio << " " << aValue << endl;
+    });
+    // FIN
     CHttpServer server(io_service, 12080);
 #endif
     UdpListen.Start(&io_service);
