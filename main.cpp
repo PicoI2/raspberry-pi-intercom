@@ -4,6 +4,7 @@
 #include "dooropen.h"
 #include "udplisten.h"
 #include "httpserver.h"
+#include "io.h"
 
 using namespace std;
 
@@ -19,8 +20,11 @@ int main (int argc, char** argv)
     
     boost::asio::io_service io_service;
 #ifdef RPI_INTERCOM_SERVER    
-	DoorBell.Start(&io_service);
-    DoorOpen.Start(&io_service);
+	// DoorBell.Start(&io_service);
+    // DoorOpen.Start(&io_service);
+    IO.Start(&io_service);
+    IO.AddInput(20);
+    IO.AddInput(21);
     CHttpServer server(io_service, 12080);
 #endif
     UdpListen.Start(&io_service);

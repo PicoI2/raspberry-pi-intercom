@@ -14,6 +14,7 @@ set (SOURCE_FILES
     httpconnection.cpp;
     httprequest.cpp;
     httpserver.cpp;
+    io.cpp;
     main.cpp;
     requesthandler.cpp;
     udplisten.cpp;
