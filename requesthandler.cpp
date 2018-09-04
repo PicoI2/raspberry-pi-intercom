@@ -3,7 +3,6 @@
 #include <sstream>
 #include "requesthandler.h"
 #include "http.h"
-#include "dooropen.h"
 
 // Constructor
 CRequestHandler::CRequestHandler(CHttpRequest& aHttpRequest)
@@ -27,7 +26,8 @@ string& CRequestHandler::Response()
     }
     else if (mHttpRequest.mMethod == http::method::PUT) {
         if ("/dooropen" == mHttpRequest.mUri) {
-            if (DoorOpen.Open()) {
+            // if (IO.SetOutput())) // TODO SEND SIGNAL TO MAIN
+            {
                 mResponse = http::code::OK;
             }
         }

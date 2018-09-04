@@ -2,8 +2,6 @@
 #include <fstream>
 #include <sys/epoll.h>
 
-#include <boost/bind.hpp>
-
 #include "io.h"
 
 using namespace std;
@@ -15,10 +13,9 @@ bool CIO::Start (boost::asio::io_service* apIoService)
     mEpoll = epoll_create(1);   // Size ignored
     mpIoService = apIoService;
     mpInterval = new boost::posix_time::millisec(40);
-    mpTimer = new boost::asio::deadline_timer(*mpIoService, *mpInterval);
-    mpTimer->async_wait(boost::bind(&CIO::OnTimer, this));
-    // mpTimer->async_wait([this]{Thread();});
-    
+    mpTimer = new boost::asio::deadline_timer(*mpIoService);
+    mpTimer->async_wait([this](const boost::system::error_code&){OnTimer();});
+
     return true;
 }
 
@@ -76,5 +73,48 @@ void CIO::OnTimer (void)
     
     // Reschedule the timer in the future:
     mpTimer->expires_from_now(*mpInterval);
-    mpTimer->async_wait(boost::bind(&CIO::OnTimer, this));
+    mpTimer->async_wait([this](const boost::system::error_code&){OnTimer();});
+}
+
+bool CIO::AddOutput (int aGpio, bool abValue)
+{
+    bool bRes = false;
+    ofstream ExportFile("/sys/class/gpio/export");
+    if (ExportFile.is_open()) {
+        ExportFile << aGpio;
+        ExportFile.close();
+
+        string DirectionFileName = string("/sys/class/gpio/gpio") + to_string(aGpio) + "/direction";
+        ofstream EdgeFile(DirectionFileName);
+        if (EdgeFile.is_open()) {
+            EdgeFile << "out";
+            EdgeFile.close();
+
+            bRes = SetOutput(aGpio, abValue);
+        }
+    }
+    cout << "AddOutput " << aGpio << " return " << bRes << endl;
+    return bRes;
+}
+
+bool CIO::SetOutput (int aGpio, bool abValue, int aDurationMs)
+{
+    bool bRes = false;
+    string ValueFileName = string("/sys/class/gpio/gpio") + to_string(aGpio) + "/value";
+    ofstream ValueFile(ValueFileName);
+    if (ValueFile.is_open()) {
+        ValueFile << abValue ? "1" : "0";
+        ValueFile.close();
+        bRes = true;
+        if (aDurationMs) {
+            boost::posix_time::millisec Interval(aDurationMs);
+            shared_ptr<boost::asio::deadline_timer> pTimer (new boost::asio::deadline_timer(*mpIoService));
+            pTimer->expires_from_now(Interval);
+            pTimer->async_wait([this, pTimer, aGpio, abValue](const boost::system::error_code&) { // pTimer will be destroyed after the call of the lambda, because we capture it by value 
+                SetOutput(aGpio, !abValue);
+            });
+        }
+    }
+    cout << "SetOutput " << aGpio << " to " << (abValue ? "1" : "0") << " return " << bRes << endl;
+    return true;
 }

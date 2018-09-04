@@ -7,6 +7,8 @@ class CIO {
 public :
     bool Start (boost::asio::io_service* apIoService);
     bool AddInput (int aGpio);
+    bool AddOutput (int aGpio, bool abValue);
+    bool SetOutput (int aGpio, bool abValue, int aDurationMs=0);
     
     void OnTimer (void);
     void WatchInputs (bool abSendSignal);

@@ -8,8 +8,6 @@ set(BOOST_MIN_VERSION "1.39.0")
 find_package(Boost ${BOOST_MIN_VERSION} REQUIRED COMPONENTS system)
 
 set (SOURCE_FILES
-    doorbell.cpp;
-    dooropen.cpp;
     http.cpp;
     httpconnection.cpp;
     httprequest.cpp;

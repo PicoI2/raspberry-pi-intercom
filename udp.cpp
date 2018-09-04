@@ -3,35 +3,39 @@
 #include <arpa/inet.h>
 #include <string.h>
 #include <boost/bind.hpp>
-#include "udplisten.h"
+#include "udp.h"
 
-CUdpListen UdpListen;
+CUdp Udp;
 
-bool CUdpListen::Start (boost::asio::io_service* apIoService)
+bool CUdp::Start (boost::asio::io_service* apIoService)
 {
+    mpIoService = apIoService;
     udp::endpoint endpoint(boost::asio::ip::address::from_string("127.0.0.1"), 12012);
-	mpSocket = new udp::socket(*apIoService, endpoint);
+	mpSocket = new udp::socket(*mpIoService, endpoint);
 	StartListening();
     return true;
 }
 
-void CUdpListen::StartListening (void)
+void CUdp::StartListening (void)
 {
     mpSocket->async_receive_from(
         boost::asio::buffer(mBuffer), mRemoteEndPoint,
-        boost::bind(&CUdpListen::ReceiveFrom, this,
+        boost::bind(&CUdp::ReceiveFrom, this,
         boost::asio::placeholders::error,
         boost::asio::placeholders::bytes_transferred));
 }
 
-void CUdpListen::ReceiveFrom (const boost::system::error_code& error, std::size_t bytes_transferred)
+void CUdp::ReceiveFrom (const boost::system::error_code& error, std::size_t bytes_transferred)
 {
-    std::string message(mBuffer.begin(), mBuffer.begin()+bytes_transferred);
-    cout << "Receive : " << message << "From : " << mRemoteEndPoint << endl;
+    std::string Message(mBuffer.begin(), mBuffer.begin()+bytes_transferred);
+    cout << "Receive : " << Message << "From : " << mRemoteEndPoint << endl;
+    MessageSignal(Message, mRemoteEndPoint);
     StartListening();
 }
 
-void CUdpListen::OpenDoor (void)
+void CUdp::Send (std::string aMessage)
 {
-    
+    udp::endpoint endpoint(boost::asio::ip::address::from_string("127.0.0.1"), 12012);
+    udp::socket socket(*mpIoService, udp::endpoint(udp::v4(), 0));
+    socket.send_to(boost::asio::buffer(aMessage), endpoint);
 }

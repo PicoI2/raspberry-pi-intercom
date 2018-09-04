@@ -1,15 +1,20 @@
 #include <iostream>
 
-#include "doorbell.h"
-#include "dooropen.h"
 #include "udp.h"
 #include "httpserver.h"
 #include "io.h"
+#include "main.h"
 
 using namespace std;
-
+CMain Main;
 
 int main (int argc, char** argv)
+{
+    Main.Start();
+	return 0;
+}
+
+void CMain::Start (void)
 {
 #ifdef RPI_INTERCOM_SERVER
     cout << "Starting server...." << endl;
@@ -18,23 +23,26 @@ int main (int argc, char** argv)
     cout << "Starting client...." << endl;
 #endif
     
-    boost::asio::io_service io_service;
 #ifdef RPI_INTERCOM_SERVER    
-	// DoorBell.Start(&io_service);
-    // DoorOpen.Start(&io_service);
-    IO.Start(&io_service);
+    IO.Start(&mIoService);
     IO.AddInput(20);
     IO.AddInput(21);
-
-    // TEST
-    IO.InputSignal.connect([](const int aGpio, const char aValue){
-        cout << "InputSignal " << aGpio << " " << aValue << endl;
+    IO.AddOutput(26, false);
+    IO.InputSignal.connect([=](const int aGpio, const char aValue){
+        OnInput(aGpio, aValue);
     });
-    // FIN
-    CHttpServer server(io_service, 12080);
+    CHttpServer server(mIoService, 12080);
 #endif
-    UdpListen.Start(&io_service);
-    io_service.run();
+    Udp.Start(&mIoService);
+    OnInput(1, '1');
+    mIoService.run();
+}
 
-	return 0;
+void CMain::OnInput (const int aGpio, const char aValue) {
+    // TEST
+    cout << "InputSignal " << aGpio << " " << aValue << endl;
+    string Message = string("InputSignal ") + to_string(aGpio) + " " + aValue;
+    Udp.Send(Message);
+    IO.SetOutput(26, true, 5000);
+    // TEST
 }
