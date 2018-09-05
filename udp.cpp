@@ -39,3 +39,13 @@ void CUdp::Send (std::string aMessage)
     udp::socket socket(*mpIoService, udp::endpoint(udp::v4(), 0));
     socket.send_to(boost::asio::buffer(aMessage), endpoint);
 }
+
+void CUdp::SendBroadcast (std::string aMessage)
+{
+    udp::endpoint endpoint(boost::asio::ip::address::from_string("192.168.10.255"), 12012);
+    udp::socket socket(*mpIoService, udp::v4());
+    socket.set_option(udp::socket::reuse_address(true));
+    socket.set_option(boost::asio::socket_base::broadcast(true));
+    socket.send_to(boost::asio::buffer(aMessage), endpoint);
+    socket.close();
+}

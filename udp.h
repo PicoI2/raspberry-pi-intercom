@@ -10,6 +10,7 @@ public :
     void StartListening (void);
     void ReceiveFrom (const boost::system::error_code& error, std::size_t bytes_transferred);
     void Send (std::string aMessage);
+    void SendBroadcast (std::string aMessage);
 
     boost::signals2::signal <void (const std::string Message, const udp::endpoint From)> MessageSignal;
 

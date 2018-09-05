@@ -38,10 +38,7 @@ void CMain::Start (void)
 }
 
 void CMain::OnInput (const int aGpio, const bool abValue) {
-    // TEST
     cout << "InputSignal " << aGpio << " " << abValue << endl;
-    // string Message = string("InputSignal ") + to_string(aGpio) + " " + to_string(abValue);
-    // Udp.Send(Message);
-    // IO.SetOutput(26, true, 5000);
-    // TEST
+    string Message = "doorbell";
+    Udp.SendBroadcast(Message);
 }
