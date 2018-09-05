@@ -1,6 +1,8 @@
 #include <iostream>
 #include <fstream>
 #include <sys/epoll.h>
+#include <chrono>
+#include <thread>
 
 #include "io.h"
 
@@ -13,7 +15,8 @@ bool CIO::Start (boost::asio::io_service* apIoService)
     mEpoll = epoll_create(1);   // Size ignored
     mpIoService = apIoService;
     mpInterval = new boost::posix_time::millisec(40);
-    mpTimer = new boost::asio::deadline_timer(*mpIoService);
+    mpDebounce = new boost::posix_time::millisec(100);
+    mpTimer = new boost::asio::deadline_timer(*mpIoService, *mpInterval);
     mpTimer->async_wait([this](const boost::system::error_code&){OnTimer();});
 
     return true;
@@ -26,6 +29,8 @@ bool CIO::AddInput (int aGpio)
     if (ExportFile.is_open()) {
         ExportFile << aGpio;
         ExportFile.close();
+        // Must wait after export eiher /sys/class/gpio/gpioXX does not have right permission
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
         string EdgeFileName = string("/sys/class/gpio/gpio") + to_string(aGpio) + "/edge";
         ofstream EdgeFile(EdgeFileName);
@@ -38,8 +43,9 @@ bool CIO::AddInput (int aGpio)
             if (ValueFile > 0) {
                 epoll_event pollEvent;
                 pollEvent.events = EPOLLPRI;
-                pollEvent.data.u64 = (uint64_t)aGpio << 32;   // Hidding GPIO number in u64 value. Be careful, data is an union !
                 pollEvent.data.fd = ValueFile;
+
+                InputsMap[ValueFile] = new CInput(ValueFile, aGpio, ReadValue(ValueFile), mpIoService);
 
                 if (0 == epoll_ctl(mEpoll, EPOLL_CTL_ADD, ValueFile, &pollEvent)) {
                     WatchInputs(false);
@@ -54,26 +60,66 @@ bool CIO::AddInput (int aGpio)
 
 void CIO::WatchInputs (bool abSendSignal)
 {
+    // cout << "Watch..." << endl;
     epoll_event Event;
     while (0 < epoll_wait(mEpoll, &Event, 1, 0)) {
-        char Value;
-        lseek(Event.data.fd, 0, SEEK_SET);
-        read(Event.data.fd, &Value, 1);
-        int Gpio = (Event.data.u64>>32);
-        cout << "Event on input " << Gpio << " value: " << Value << endl;
-        if (abSendSignal) {
-            InputSignal(Gpio, Value);
+        ReadValue(Event.data.fd);   // We read value only to clear event. We assume value has changed
+        CInput* pInput = InputsMap[Event.data.fd];
+        if (!pInput->mbDebouncing)
+        {
+            pInput->mbDebouncing = true;
+            pInput->mbValue = !pInput->mbValue;
+            // cout << "Event on input " << pInput->mGpio << " value: " << pInput->mbValue << endl;
+            if (abSendSignal) {
+                InputSignal(pInput->mGpio, pInput->mbValue);
+
+                pInput->mTimer.expires_from_now(*mpDebounce);
+                pInput->mTimer.async_wait([=](const boost::system::error_code& error){
+                    if (!error) {
+                        OnDebounceEnd(pInput);
+                    }
+                });
+            }
         }
+        else {
+            // cout << "Debouncing input " << pInput->mGpio << endl;
+            pInput->mTimer.expires_from_now(*mpDebounce);
+            pInput->mTimer.async_wait([=](const boost::system::error_code& error){
+                if (!error) {
+                    OnDebounceEnd(pInput);
+                }
+            });
+        }
+    }
+}
+
+bool CIO::ReadValue (int aFd)
+{
+    char Value;
+    lseek(aFd, 0, SEEK_SET);
+    read(aFd, &Value, 1);
+    return ('1' == Value);
+}
+
+void CIO::OnDebounceEnd (CInput* pInput)
+{
+    pInput->mbDebouncing = false;
+    bool Value = ReadValue(pInput->mFd);
+    if (pInput->mbValue != Value) {
+        pInput->mbValue = Value;
+        InputSignal(pInput->mGpio, Value);
     }
 }
 
 void CIO::OnTimer (void)
 {
+    // cout << "OnTimer..." << endl;
     WatchInputs(true);
     
     // Reschedule the timer in the future:
     mpTimer->expires_from_now(*mpInterval);
     mpTimer->async_wait([this](const boost::system::error_code&){OnTimer();});
+    // cout << "OnTimer END" << endl;
 }
 
 bool CIO::AddOutput (int aGpio, bool abValue)
@@ -84,11 +130,14 @@ bool CIO::AddOutput (int aGpio, bool abValue)
         ExportFile << aGpio;
         ExportFile.close();
 
+        // Must wait after export eiher /sys/class/gpio/gpioXX does not have right permission
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
         string DirectionFileName = string("/sys/class/gpio/gpio") + to_string(aGpio) + "/direction";
-        ofstream EdgeFile(DirectionFileName);
-        if (EdgeFile.is_open()) {
-            EdgeFile << "out";
-            EdgeFile.close();
+        ofstream DirectionFile(DirectionFileName);
+        if (DirectionFile.is_open()) {
+            DirectionFile << "out";
+            DirectionFile.close();
 
             bRes = SetOutput(aGpio, abValue);
         }

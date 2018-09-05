@@ -27,22 +27,21 @@ void CMain::Start (void)
     IO.Start(&mIoService);
     IO.AddInput(20);
     IO.AddInput(21);
-    IO.AddOutput(26, false);
-    IO.InputSignal.connect([=](const int aGpio, const char aValue){
-        OnInput(aGpio, aValue);
+    IO.AddOutput(26, true);
+    IO.InputSignal.connect([=](const int aGpio, const bool abValue){
+        OnInput(aGpio, abValue);
     });
     CHttpServer server(mIoService, 12080);
 #endif
     Udp.Start(&mIoService);
-    OnInput(1, '1');
     mIoService.run();
 }
 
-void CMain::OnInput (const int aGpio, const char aValue) {
+void CMain::OnInput (const int aGpio, const bool abValue) {
     // TEST
-    cout << "InputSignal " << aGpio << " " << aValue << endl;
-    string Message = string("InputSignal ") + to_string(aGpio) + " " + aValue;
-    Udp.Send(Message);
-    IO.SetOutput(26, true, 5000);
+    cout << "InputSignal " << aGpio << " " << abValue << endl;
+    // string Message = string("InputSignal ") + to_string(aGpio) + " " + to_string(abValue);
+    // Udp.Send(Message);
+    // IO.SetOutput(26, true, 5000);
     // TEST
 }
