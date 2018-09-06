@@ -10,7 +10,7 @@ CUdp Udp;
 bool CUdp::Start (boost::asio::io_service* apIoService)
 {
     mpIoService = apIoService;
-    udp::endpoint endpoint(boost::asio::ip::address::from_string("127.0.0.1"), 12012);
+    udp::endpoint endpoint(boost::asio::ip::address::from_string("0.0.0.0"), 12012);
 	mpSocket = new udp::socket(*mpIoService, endpoint);
 	StartListening();
     return true;
@@ -39,6 +39,8 @@ void CUdp::Send (std::string aMessage)
     udp::socket socket(*mpIoService, udp::endpoint(udp::v4(), 0));
     socket.send_to(boost::asio::buffer(aMessage), endpoint);
 }
+
+// TODO Keep socket in member variable to avoid destroying it before end of transmission.
 
 void CUdp::SendBroadcast (std::string aMessage)
 {
