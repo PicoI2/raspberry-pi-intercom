@@ -12,6 +12,8 @@ bool CUdp::Start (boost::asio::io_service* apIoService)
     mpIoService = apIoService;
     udp::endpoint endpoint(boost::asio::ip::address::from_string("0.0.0.0"), 12012);
 	mpSocket = new udp::socket(*mpIoService, endpoint);
+    mpSocket->set_option(udp::socket::reuse_address(true));
+    mpSocket->set_option(boost::asio::socket_base::broadcast(true));
 	StartListening();
     return true;
 }
@@ -28,26 +30,19 @@ void CUdp::StartListening (void)
 void CUdp::ReceiveFrom (const boost::system::error_code& error, std::size_t bytes_transferred)
 {
     std::string Message(mBuffer.begin(), mBuffer.begin()+bytes_transferred);
-    cout << "Receive : " << Message << "From : " << mRemoteEndPoint << endl;
+    cout << "Receive : " << Message << " from : " << mRemoteEndPoint << endl;
     MessageSignal(Message, mRemoteEndPoint);
     StartListening();
 }
 
 void CUdp::Send (std::string aMessage)
 {
-    udp::endpoint endpoint(boost::asio::ip::address::from_string("127.0.0.1"), 12012);
-    udp::socket socket(*mpIoService, udp::endpoint(udp::v4(), 0));
-    socket.send_to(boost::asio::buffer(aMessage), endpoint);
+    udp::endpoint endpoint(boost::asio::ip::address::from_string("192.168.10.54"), 12012);
+    mpSocket->send_to(boost::asio::buffer(aMessage), endpoint);
 }
-
-// TODO Keep socket in member variable to avoid destroying it before end of transmission.
 
 void CUdp::SendBroadcast (std::string aMessage)
 {
     udp::endpoint endpoint(boost::asio::ip::address::from_string("192.168.10.255"), 12012);
-    udp::socket socket(*mpIoService, udp::v4());
-    socket.set_option(udp::socket::reuse_address(true));
-    socket.set_option(boost::asio::socket_base::broadcast(true));
-    socket.send_to(boost::asio::buffer(aMessage), endpoint);
-    socket.close();
+    mpSocket->send_to(boost::asio::buffer(aMessage), endpoint);
 }
