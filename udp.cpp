@@ -4,13 +4,14 @@
 #include <string.h>
 #include <boost/bind.hpp>
 #include "udp.h"
+#include "config.h"
 
 CUdp Udp;
 
 bool CUdp::Start (boost::asio::io_service* apIoService)
 {
     mpIoService = apIoService;
-    udp::endpoint endpoint(boost::asio::ip::address::from_string("0.0.0.0"), 12012);
+    udp::endpoint endpoint(boost::asio::ip::address::from_string("0.0.0.0"), stoul(Config.Map["port-udp"]));
 	mpSocket = new udp::socket(*mpIoService, endpoint);
     mpSocket->set_option(udp::socket::reuse_address(true));
     mpSocket->set_option(boost::asio::socket_base::broadcast(true));

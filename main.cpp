@@ -4,6 +4,7 @@
 #include "httpserver.h"
 #include "io.h"
 #include "main.h"
+#include "config.h"
 
 using namespace std;
 CMain Main;
@@ -16,11 +17,14 @@ int main (int argc, char** argv)
 
 void CMain::Start (void)
 {
+    Config.SetParameter("port-udp", "12012");
 #ifdef RPI_INTERCOM_SERVER
     cout << "Starting server...." << endl;
+    Config.ReadConfigFile("server.cfg");
 #endif
 #ifdef RPI_INTERCOM_CLIENT
     cout << "Starting client...." << endl;
+    Config.ReadConfigFile("client.cfg");
 #endif
     
 #ifdef RPI_INTERCOM_SERVER    
@@ -41,4 +45,6 @@ void CMain::OnInput (const int aGpio, const bool abValue) {
     cout << "InputSignal " << aGpio << " " << abValue << endl;
     string Message = "doorbell";
     Udp.SendBroadcast(Message);
+    string Message2 = "nobroadcast";
+    Udp.Send(Message2);
 }
