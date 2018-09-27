@@ -1,4 +1,5 @@
 #include <iostream>
+#include <thread>
 
 #include "udp.h"
 #include "httpserver.h"
@@ -36,6 +37,11 @@ void CMain::Start ()
             OnInput(aGpio, abValue);
         });
         HttpServer.Start(&mIoService, stoul(Config.GetString("http-port")));
+        thread ([](){
+            system("./pjsua --config-file pjsua-server.conf");
+            cerr << "Pjsua exit" << endl;
+            // TODO Stop program here !
+        }).detach();
     }
     else if ("client" == Config.GetString("mode")) {
         cout << "Starting client...." << endl;
