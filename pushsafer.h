@@ -8,7 +8,8 @@ class CPushSafer
 {
 public:
 	bool Init (boost::asio::io_service* apIoService);
-	bool Notification ();
+	bool Notification (string aMessage);
+    string ToFormData (string aKey, string aValue);
 
 	boost::asio::io_service* mpIoService;
 };

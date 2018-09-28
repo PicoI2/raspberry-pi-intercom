@@ -1,8 +1,8 @@
 #include "pushsafer.h"
 #include <iostream>
-
 #include <chrono>
 #include <thread>
+#include "config.h"
 
 using namespace std;
 
@@ -14,46 +14,18 @@ bool CPushSafer::Init (boost::asio::io_service* apIoService)
     return true;
 }
 
-bool CPushSafer::Notification ()
+string CPushSafer::ToFormData (string aKey, string aValue)
 {
-//     string json = 
-// R"V0G0N({
-//     "k": "pushsaferprivatekey",
-//     "d": 1337,
-//     "t": "CPushsafer",
-//     "m": "This is a test from sending in C++ with boost"
-// })V0G0N";
+    string Param = "--------------------------3173acd4f807267a\r\nContent-Disposition: form-data; name=\"";
+    Param.append(aKey);
+    Param.append("\"\r\n\r\n");
+    Param.append(aValue);
+    Param.append("\r\n");
+    return Param;
+}
 
-    string formdata = 
-"--------------------------3173acd4f807267a\r\n\
-Content-Disposition: form-data; name=\"m\"\r\n\
-\r\n\
-Hello World!\r\n\
---------------------------3173acd4f807267a\r\n\
-Content-Disposition: form-data; name=\"k\"\r\n\
-\r\n\
-pushsaferprivatekey\r\n\
---------------------------3173acd4f807267a\r\n\
-Content-Disposition: form-data; name=\"d\"\r\n\
-\r\n\
-1337\r\n\
---------------------------3173acd4f807267a--\r\n\
-";
-
-    string request =
-"POST /api HTTP/1.1\r\n\
-Host: www.pushsafer.com\r\n\
-User-Agent: C/1.0\r\n\
-Accept: */*\r\n\
-Content-Length: ";
-    request.append(to_string(formdata.length()));
-    request.append(
-"\r\n\
-Expect: 100-continue\r\n\
-Content-Type: multipart/form-data; boundary=------------------------3173acd4f807267a\r\n\
-\r\n");
-    request.append(formdata);
-
+bool CPushSafer::Notification (string aMessage)
+{
 // k = Private or Alias Key*
 // d = Device
 // t = Title
@@ -88,6 +60,31 @@ Content-Type: multipart/form-data; boundary=------------------------3173acd4f807
 // * required parameters
 // max. size of all POST parameters = 8192kb
 
+    string FormData = ToFormData("k", Config.GetString("pushsafer-key"));
+    FormData.append(ToFormData("t", "rpi-intercom"));
+    FormData.append(ToFormData("m", aMessage));
+    string Device = Config.GetString("pushsafer-device", false);
+    if (!Device.empty()) {
+        FormData.append(ToFormData("d", Device));
+    }
+    FormData.append(ToFormData("s", "17"));
+    FormData.append(ToFormData("v", "3"));
+    FormData.append(ToFormData("pr", "2"));
+    FormData.append("--------------------------3173acd4f807267a--\r\n");
+
+    string Request =
+"POST /api HTTP/1.1\r\n\
+Host: www.pushsafer.com\r\n\
+User-Agent: C/1.0\r\n\
+Accept: */*\r\n\
+Content-Length: ";
+    Request.append(to_string(FormData.length()));
+    Request.append(
+"\r\n\
+Expect: 100-continue\r\n\
+Content-Type: multipart/form-data; boundary=------------------------3173acd4f807267a\r\n\
+\r\n");
+    Request.append(FormData);
 
     tcp::resolver Resolver(*mpIoService);
     tcp::resolver::query Query("www.pushsafer.com", "http");
@@ -103,7 +100,7 @@ Content-Type: multipart/form-data; boundary=------------------------3173acd4f807
         cout << "Error connecting to: " << endpoint << endl;
     }
     else {
-        boost::asio::write(Socket, boost::asio::buffer(request));
+        boost::asio::write(Socket, boost::asio::buffer(Request));
         
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 

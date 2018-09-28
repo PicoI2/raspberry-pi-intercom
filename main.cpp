@@ -32,7 +32,10 @@ void CMain::Start ()
         PushSafer.Init(&mIoService);
         IO.Start(&mIoService);
         IO.AddInput(Config.GetULong("input-ringbell"));
-        IO.AddOutput(Config.GetULong("output-door-open"), true);
+        unsigned long OutputDoorOpen = Config.GetULong("output-door-open", false);
+        if (OutputDoorOpen) {
+            IO.AddOutput(Config.GetULong("output-door-open"), true);
+        }
         IO.InputSignal.connect([=](const int aGpio, const bool abValue){
             OnInput(aGpio, abValue);
         });
@@ -40,6 +43,7 @@ void CMain::Start ()
         thread ([](){
             system("./pjsua --config-file pjsua-server.conf");
             cerr << "Pjsua exit" << endl;
+            PushSafer.Notification("Error: rpi-intercom server stoped");
             // TODO Stop program here !
         }).detach();
     }
@@ -59,5 +63,5 @@ void CMain::OnInput (const int aGpio, const bool abValue) {
     cout << "InputSignal " << aGpio << " " << abValue << endl;
     string Message = "doorbell";
     Udp.SendBroadcast(Message);
-    PushSafer.Notification();
+    PushSafer.Notification("Someone is at your door");
 }
