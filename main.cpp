@@ -56,6 +56,9 @@ void CMain::Start ()
     }
 
     Udp.Start(&mIoService);
+    Udp.MessageSignal.connect([=](const std::string Message, const udp::endpoint From){
+        OnMessage(Message);
+    });
     mIoService.run();
 }
 
@@ -64,4 +67,15 @@ void CMain::OnInput (const int aGpio, const bool abValue) {
     string Message = "doorbell";
     Udp.SendBroadcast(Message);
     PushSafer.Notification("Someone is at your door");
+}
+
+void CMain::OnMessage (const string aMessage) {
+    if (string::npos != aMessage.find("doorbell")) {
+            thread ([](){
+            system("aplay ring.wav");
+        }).detach();
+    }
+    else {
+        cout << "Received unknown message :'" << aMessage << "'" << endl;
+    }
 }
