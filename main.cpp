@@ -7,8 +7,8 @@
 #include "main.h"
 #include "config.h"
 #include "pushsafer.h"
+#include "audio.h"
 
-using namespace std;
 CMain Main;
 
 int main (int argc, char** argv)
@@ -44,7 +44,7 @@ void CMain::Start ()
             system("./pjsua --config-file pjsua-server.conf");
             cerr << "Pjsua exit" << endl;
             PushSafer.Notification("Error: rpi-intercom server stoped");
-            // TODO Stop program here !
+            terminate();
         }).detach();
     }
     else if ("client" == Config.GetString("mode")) {
@@ -71,9 +71,7 @@ void CMain::OnInput (const int aGpio, const bool abValue) {
 
 void CMain::OnMessage (const string aMessage) {
     if (string::npos != aMessage.find("doorbell")) {
-            thread ([](){
-            system("aplay ring.wav");
-        }).detach();
+        Audio.Ring();
     }
     else {
         cout << "Received unknown message :'" << aMessage << "'" << endl;

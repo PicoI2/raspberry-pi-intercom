@@ -11,6 +11,7 @@ set(BOOST_MIN_VERSION "1.39.0")
 find_package(Boost ${BOOST_MIN_VERSION} REQUIRED COMPONENTS system)
 
 set (SOURCE_FILES
+    audio.cpp;
     config.cpp;
     http.cpp;
     httpconnection.cpp;
@@ -24,4 +25,4 @@ set (SOURCE_FILES
 )
 
 add_executable(rpi-intercom ${SOURCE_FILES})
-target_link_libraries(rpi-intercom pthread boost_system)
+target_link_libraries(rpi-intercom pthread boost_system portaudio)
