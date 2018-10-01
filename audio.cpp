@@ -24,12 +24,6 @@ void CAudio::Ring()
 fprintf(stderr, "%s:%i: failure at: %s\n", __FILE__, __LINE__, #x); \
 _exit(1); } }
 
-std::string freadStr(FILE* f, size_t len) {
-    std::string s(len, '\0');
-    CHECK(fread(&s[0], 1, len, f) == len);
-    return s;
-}
-
 template<typename T>
 T freadNum(FILE* f) {
     T value;
@@ -37,49 +31,21 @@ T freadNum(FILE* f) {
     return value; // no endian-swap for now... WAV is LE anyway...
 }
 
-FILE* pFile;
-int numChannels;
-int sampleRate;
-int bytesPerSample, bitsPerSample;
-
-void readFmtChunk(uint32_t chunkLen) {
-    CHECK(chunkLen >= 16);
-    uint16_t fmttag = freadNum<uint16_t>(pFile); // 1: PCM (int). 3: IEEE float
-    CHECK(fmttag == 1 || fmttag == 3);
-    numChannels = freadNum<uint16_t>(pFile);
-    CHECK(numChannels > 0);
-    printf("%i channels\n", numChannels);
-    sampleRate = freadNum<uint32_t>(pFile);
-    printf("%i Hz\n", sampleRate);
-    uint32_t byteRate = freadNum<uint32_t>(pFile);
-    uint16_t blockAlign = freadNum<uint16_t>(pFile);
-    bitsPerSample = freadNum<uint16_t>(pFile);
-    bytesPerSample = bitsPerSample / 8;
-    CHECK(byteRate == sampleRate * numChannels * bytesPerSample);
-    CHECK(blockAlign == numChannels * bytesPerSample);
-    if(fmttag == 1 /*PCM*/) {
-        printf("PCM %ibit int\n", bitsPerSample);
-    } else {
-        CHECK(fmttag == 3 /* IEEE float */);
-        CHECK(bitsPerSample == 32);
-        printf("32bit float\n");
-    }
-    if(chunkLen > 16) {
-        uint16_t extendedSize = freadNum<uint16_t>(pFile);
-        CHECK(chunkLen == 18 + extendedSize);
-        fseek(pFile, extendedSize, SEEK_CUR);
-    }
-}
-
 void CAudio::Thread()
 {
-    unsigned int rate, channels, seconds;
-    rate 	 = 44100;
-    channels = 1;
-    seconds  = 60;
+    FILE* pFile = fopen("ring.wav", "rb");
+    
+    // Locals function
+    auto freadStr = [pFile] (FILE* f, size_t len) {
+        string s(len, '\0');
+        CHECK(fread(&s[0], 1, len, pFile) == len);
+        return s;
+    };
 
-    //
-    pFile = fopen("c2c.wav", "rb");
+    unsigned int rate, channels;
+    int bytesPerSample, bitsPerSample;
+
+    
     uint32_t chunkLen;
     CHECK(pFile != NULL);
     
@@ -89,26 +55,47 @@ void CAudio::Thread()
     while(true) {
         std::string chunkName = freadStr(pFile, 4);
         chunkLen = freadNum<uint32_t>(pFile);
-        if(chunkName == "fmt ")
-            readFmtChunk(chunkLen);
+        if(chunkName == "fmt ") {
+            CHECK(chunkLen >= 16);
+            uint16_t fmttag = freadNum<uint16_t>(pFile); // 1: PCM (int). 3: IEEE float
+            CHECK(fmttag == 1 || fmttag == 3);
+            channels = freadNum<uint16_t>(pFile);
+            CHECK(channels > 0);
+            printf("%i channels\n", channels);
+            rate = freadNum<uint32_t>(pFile);
+            printf("%i Hz\n", rate);
+            uint32_t byteRate = freadNum<uint32_t>(pFile);
+            uint16_t blockAlign = freadNum<uint16_t>(pFile);
+            bitsPerSample = freadNum<uint16_t>(pFile);
+            bytesPerSample = bitsPerSample / 8;
+            CHECK(byteRate == rate * channels * bytesPerSample);
+            CHECK(blockAlign == channels * bytesPerSample);
+            if(fmttag == 1 /*PCM*/) {
+                printf("PCM %ibit int\n", bitsPerSample);
+            } else {
+                CHECK(fmttag == 3 /* IEEE float */);
+                CHECK(bitsPerSample == 32);
+                printf("32bit float\n");
+            }
+            if(chunkLen > 16) {
+                uint16_t extendedSize = freadNum<uint16_t>(pFile);
+                CHECK(chunkLen == 18 + extendedSize);
+                fseek(pFile, extendedSize, SEEK_CUR);
+            }
+        }
         else if(chunkName == "data") {
-            CHECK(sampleRate != 0);
-            CHECK(numChannels > 0);
+            CHECK(rate != 0);
+            CHECK(channels > 0);
             CHECK(bytesPerSample > 0);
-            printf("len: %.0f secs\n", double(chunkLen) / sampleRate / numChannels / bytesPerSample);
+            printf("len: %.0f secs\n", double(chunkLen) / rate / channels / bytesPerSample);
             break; // start playing now
         } else {
             // skip chunk
             CHECK(fseek(pFile, chunkLen, SEEK_CUR) == 0);
         }
     }
+    unsigned int seconds  = (chunkLen) / rate / channels / bytesPerSample;
 
-    rate 	 = sampleRate;
-    channels = numChannels;
-    seconds  = (chunkLen) / sampleRate / numChannels / bytesPerSample;
-
-    // fseek(pFile, 44, SEEK_SET);
-    //
     unsigned int pcm, tmp, dir;
     
     snd_pcm_t *pcm_handle;
