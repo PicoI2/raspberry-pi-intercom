@@ -1,3 +1,5 @@
+# sudo apt install libboost-system-dev
+
 cmake_minimum_required (VERSION 3.0.2)
 project (rpi-intercom)
 
@@ -25,4 +27,4 @@ set (SOURCE_FILES
 )
 
 add_executable(rpi-intercom ${SOURCE_FILES})
-target_link_libraries(rpi-intercom pthread boost_system portaudio)
+target_link_libraries(rpi-intercom pthread boost_system asound)
