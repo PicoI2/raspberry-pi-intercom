@@ -83,7 +83,9 @@ void CAudio::Thread()
     }
 
     size_t StartPos = ftell (pFile);
-    while (bOk && mbPlaying) {
+    unsigned int seconds = (chunkLen) / rate / channels / bytesPerSample;
+    unsigned int nbPlay = (60/seconds) + 1; // Will ring for approximately 1 minute
+    while (bOk && mbPlaying && nbPlay--) {
         fseek(pFile, StartPos, SEEK_SET);
         unsigned int pcm;
         
