@@ -6,6 +6,7 @@ public :
     void OnInput (const int aGpio, const bool abValue);
     void OnMessage (const string aMessage);
     bool OnRequest (const CHttpRequest& aHttpRequest);
+    void OnExit (const boost::system::error_code& error, int signal_number);
 
     boost::asio::io_service mIoService;
 };

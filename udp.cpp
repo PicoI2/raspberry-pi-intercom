@@ -20,6 +20,11 @@ bool CUdp::Start (boost::asio::io_service* apIoService)
     return true;
 }
 
+void CUdp::Stop()
+{
+	// TODO
+}
+
 void CUdp::StartListening (void)
 {
     mpSocket->async_receive_from(

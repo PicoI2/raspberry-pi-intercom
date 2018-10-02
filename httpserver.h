@@ -11,8 +11,8 @@ using boost::asio::ip::tcp;
 class CHttpServer
 {
 public:
-	bool Start(boost::asio::io_service* mpIoService, int aPort);
-
+	bool Start (boost::asio::io_service* mpIoService, int aPort);
+	void Stop ();
 	boost::signals2::signal <bool (const CHttpRequest& aHttpRequest)> RequestSignal;
 
 private:

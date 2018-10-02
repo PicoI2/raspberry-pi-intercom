@@ -28,6 +28,13 @@ int main (int argc, char** argv)
 void CMain::Start ()
 {
     bool bRes = true;
+
+    // Catch Ctrl-C
+    boost::asio::signal_set ExitSignal (mIoService, SIGINT);
+    ExitSignal.async_wait([=](const boost::system::error_code& error, int signal_number){
+        OnExit(error, signal_number);
+    });
+
     if ("server" == Config.GetString("mode")) {
         cout << "Starting server...." << endl;
         PushSafer.Init(&mIoService);
@@ -55,18 +62,23 @@ void CMain::Start ()
         exit(0);
     }
 
+    // Start HttpServer
     HttpServer.Start(&mIoService, stoul(Config.GetString("http-port")));
     HttpServer.RequestSignal.connect([=](const CHttpRequest& aHttpRequest){
         return OnRequest(aHttpRequest);
     });
 
+    // Start UDP
     Udp.Start(&mIoService);
     Udp.MessageSignal.connect([=](const std::string Message, const udp::endpoint From){
         OnMessage(Message);
     });
+
+    // Start boost
     mIoService.run();
 }
 
+// When an input change
 void CMain::OnInput (const int aGpio, const bool abValue) {
     cout << "InputSignal " << aGpio << " " << abValue << endl;
     string Message = "doorbell";
@@ -74,6 +86,7 @@ void CMain::OnInput (const int aGpio, const bool abValue) {
     PushSafer.Notification("Someone is at your door");
 }
 
+// When an UDP message is received
 void CMain::OnMessage (const string aMessage) {
     if (string::npos != aMessage.find("doorbell")) {
         Audio.Ring();
@@ -83,6 +96,7 @@ void CMain::OnMessage (const string aMessage) {
     }
 }
 
+// When an HTTP Request does not concern a file
 bool CMain::OnRequest (const CHttpRequest& aHttpRequest) {
     bool bRes;
     if (aHttpRequest.mMethod == http::method::PUT) {
@@ -98,4 +112,14 @@ bool CMain::OnRequest (const CHttpRequest& aHttpRequest) {
         }
     }
     return bRes;
+}
+
+// When Ctrl-C
+void CMain::OnExit (const boost::system::error_code& error, int signal_number)
+{
+    cout << " Exit on signal " << signal_number << endl;
+    Audio.Stop();
+    HttpServer.Stop();
+    Udp.Stop();
+    exit(0);
 }

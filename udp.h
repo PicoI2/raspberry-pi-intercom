@@ -7,6 +7,7 @@ using boost::asio::ip::udp;
 class CUdp {
 public :
     bool Start (boost::asio::io_service* apIoService);
+    void Stop ();
     void StartListening (void);
     void ReceiveFrom (const boost::system::error_code& error, std::size_t bytes_transferred);
     void Send (std::string aMessage);
