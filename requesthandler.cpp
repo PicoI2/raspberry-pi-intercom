@@ -3,6 +3,7 @@
 #include <sstream>
 #include "requesthandler.h"
 #include "http.h"
+#include "httpserver.h"
 #include "io.h"
 
 // Constructor
@@ -25,13 +26,8 @@ string& CRequestHandler::Response()
             }
         }
     }
-    else if (mHttpRequest.mMethod == http::method::PUT) {
-        if ("/dooropen" == mHttpRequest.mUri) {
-            if (IO.SetOutput(26, true, 2000))
-            {
-                mResponse = http::code::OK;
-            }
-        }
+    else if (HttpServer.RequestSignal(mHttpRequest)) {
+        mResponse = http::code::OK;
     }
     // cout << "Response size: " << mResponse.size() << endl;
     return mResponse;

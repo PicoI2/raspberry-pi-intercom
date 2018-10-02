@@ -5,6 +5,7 @@ public :
     void Start ();
     void OnInput (const int aGpio, const bool abValue);
     void OnMessage (const string aMessage);
+    bool OnRequest (const CHttpRequest& aHttpRequest);
 
     boost::asio::io_service mIoService;
 };

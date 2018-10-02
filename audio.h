@@ -6,9 +6,11 @@ using namespace std;
 
 class CAudio {
 public :
-    void Ring  ();
-    void Thread ();
+    void Ring ();
+    void Stop ();
 protected :
+    void Thread ();
+
     atomic<bool> mbPlaying;
 };
 

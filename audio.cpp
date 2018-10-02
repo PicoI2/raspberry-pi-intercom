@@ -42,6 +42,7 @@ void CAudio::Thread()
         return s;
     };
 
+    // Read WAV headers
     unsigned int rate, channels;
     int bytesPerSample, bitsPerSample;
     
@@ -81,7 +82,9 @@ void CAudio::Thread()
         }
     }
 
-    if (bOk) {
+    size_t StartPos = ftell (pFile);
+    while (bOk && mbPlaying) {
+        fseek(pFile, StartPos, SEEK_SET);
         unsigned int pcm;
         
         /* Open the PCM device in playback mode */
@@ -128,7 +131,7 @@ void CAudio::Thread()
         snd_pcm_hw_params_get_period_time(params, &period, NULL);
 
         unsigned int seconds  = (chunkLen) / rate / channels / bytesPerSample;
-        for (unsigned int loops = (seconds * 1000000) / period; loops > 0; loops--) {
+        for (unsigned int loops = (seconds * 1000000) / period; loops > 0 && mbPlaying; loops--) {
             if (pcm = fread(buff, 1, buff_size, pFile) == 0) {
                 printf("Early end of file.\n");
                 break;
@@ -146,5 +149,10 @@ void CAudio::Thread()
     }
     
     fclose(pFile);
+    mbPlaying = false;
+}
+
+void CAudio::Stop()
+{
     mbPlaying = false;
 }

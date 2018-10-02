@@ -2,6 +2,7 @@
 #include <thread>
 
 #include "udp.h"
+#include "http.h"
 #include "httpserver.h"
 #include "io.h"
 #include "main.h"
@@ -39,7 +40,6 @@ void CMain::Start ()
         IO.InputSignal.connect([=](const int aGpio, const bool abValue){
             OnInput(aGpio, abValue);
         });
-        HttpServer.Start(&mIoService, stoul(Config.GetString("http-port")));
         thread ([](){
             system("./pjsua --config-file pjsua-server.conf");
             cerr << "Pjsua exit" << endl;
@@ -54,6 +54,11 @@ void CMain::Start ()
         cerr << "Unknown mode in config file" << endl;
         exit(0);
     }
+
+    HttpServer.Start(&mIoService, stoul(Config.GetString("http-port")));
+    HttpServer.RequestSignal.connect([=](const CHttpRequest& aHttpRequest){
+        return OnRequest(aHttpRequest);
+    });
 
     Udp.Start(&mIoService);
     Udp.MessageSignal.connect([=](const std::string Message, const udp::endpoint From){
@@ -76,4 +81,21 @@ void CMain::OnMessage (const string aMessage) {
     else {
         cout << "Received unknown message :'" << aMessage << "'" << endl;
     }
+}
+
+bool CMain::OnRequest (const CHttpRequest& aHttpRequest) {
+    bool bRes;
+    if (aHttpRequest.mMethod == http::method::PUT) {
+        if ("/dooropen" == aHttpRequest.mUri) {
+            if (IO.SetOutput(26, true, 2000))
+            {
+                bRes = true;
+            }
+        }
+        else if ("/stopring" == aHttpRequest.mUri) {
+            Audio.Stop();
+            bRes = true;
+        }
+    }
+    return bRes;
 }
