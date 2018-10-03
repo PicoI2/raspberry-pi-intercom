@@ -102,6 +102,7 @@ Content-Type: multipart/form-data; boundary=------------------------3173acd4f807
     else {
         boost::asio::write(Socket, boost::asio::buffer(Request));
         
+        // TODO Do something else
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
         std::array<char, 4096> Buffer;

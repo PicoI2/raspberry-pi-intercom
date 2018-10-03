@@ -35,10 +35,23 @@ void CMain::Start ()
         OnExit(error, signal_number);
     });
 
+    // Start HttpServer
+    HttpServer.Start(&mIoService, stoul(Config.GetString("http-port")));
+    HttpServer.RequestSignal.connect([=](const CHttpRequest& aHttpRequest){
+        return OnRequest(aHttpRequest);
+    });
+
+    // Start UDP
+    Udp.Start(&mIoService);
+    Udp.MessageSignal.connect([=](const std::string Message, const udp::endpoint From){
+        OnMessage(Message);
+    });
+
+    IO.Start(&mIoService);
     if ("server" == Config.GetString("mode")) {
         cout << "Starting server...." << endl;
         PushSafer.Init(&mIoService);
-        IO.Start(&mIoService);
+        
         IO.AddInput(Config.GetULong("input-ringbell"));
         unsigned long OutputDoorOpen = Config.GetULong("output-door-open", false);
         if (OutputDoorOpen) {
@@ -52,7 +65,7 @@ void CMain::Start ()
             cerr << "Pjsua exit" << endl;
             PushSafer.Notification("Error: rpi-intercom server stoped");
             terminate();
-        }).detach();
+        });
     }
     else if ("client" == Config.GetString("mode")) {
         cout << "Starting client...." << endl;
@@ -61,18 +74,6 @@ void CMain::Start ()
         cerr << "Unknown mode in config file" << endl;
         exit(0);
     }
-
-    // Start HttpServer
-    HttpServer.Start(&mIoService, stoul(Config.GetString("http-port")));
-    HttpServer.RequestSignal.connect([=](const CHttpRequest& aHttpRequest){
-        return OnRequest(aHttpRequest);
-    });
-
-    // Start UDP
-    Udp.Start(&mIoService);
-    Udp.MessageSignal.connect([=](const std::string Message, const udp::endpoint From){
-        OnMessage(Message);
-    });
 
     // Start boost
     mIoService.run();
@@ -120,6 +121,7 @@ void CMain::OnExit (const boost::system::error_code& error, int signal_number)
     cout << " Exit on signal " << signal_number << endl;
     Audio.Stop();
     HttpServer.Stop();
+    IO.Stop();
     Udp.Stop();
     exit(0);
 }

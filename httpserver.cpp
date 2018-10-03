@@ -15,7 +15,7 @@ bool CHttpServer::Start(boost::asio::io_service* apIoService, int aPort)
 
 void CHttpServer::Stop()
 {
-	// TODO
+	mpAcceptor->close();
 }
 
 // Start or restart listen on server socket

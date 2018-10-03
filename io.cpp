@@ -22,6 +22,11 @@ bool CIO::Start (boost::asio::io_service* apIoService)
     return true;
 }
 
+void CIO::Stop ()
+{
+    mpTimer->cancel();
+}
+
 bool CIO::AddInput (int aGpio)
 {
     bool bRes = false;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <atomic>
+#include <thread>
 
 using namespace std;
 
@@ -10,7 +11,7 @@ public :
     void Stop ();
 protected :
     void Thread ();
-
+    thread mThread;
     atomic<bool> mbPlaying;
 };
 

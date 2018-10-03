@@ -22,7 +22,7 @@ bool CUdp::Start (boost::asio::io_service* apIoService)
 
 void CUdp::Stop()
 {
-	// TODO
+	mpSocket->close();
 }
 
 void CUdp::StartListening (void)

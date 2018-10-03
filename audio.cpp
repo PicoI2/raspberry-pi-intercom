@@ -2,7 +2,6 @@
 
 #include <iostream>
 #include <fstream>
-#include <thread>
 #include <alsa/asoundlib.h>
 #include <stdio.h>
 
@@ -14,9 +13,9 @@ void CAudio::Ring()
 {
     if (!mbPlaying) {
         mbPlaying = true;
-        thread ([this](){
+        mThread = thread ([this](){
             Thread();
-        }).detach();
+        });
     }
 }
 
@@ -157,4 +156,7 @@ void CAudio::Thread()
 void CAudio::Stop()
 {
     mbPlaying = false;
+    if (mThread.joinable()) {
+        mThread.join();
+    }
 }
