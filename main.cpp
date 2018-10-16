@@ -5,6 +5,7 @@
 #include "io.h"
 #include "main.h"
 #include "config.h"
+#include "pushsafer.h"
 
 using namespace std;
 CMain Main;
@@ -18,6 +19,7 @@ int main (int argc, char** argv)
 void CMain::Start (void)
 {
     Config.SetParameter("port-udp", "12012");
+    PushSafer.Init(&mIoService);
 #ifdef RPI_INTERCOM_SERVER
     cout << "Starting server...." << endl;
     Config.ReadConfigFile("server.cfg");
@@ -47,4 +49,5 @@ void CMain::OnInput (const int aGpio, const bool abValue) {
     Udp.SendBroadcast(Message);
     string Message2 = "nobroadcast";
     Udp.Send(Message2);
+    PushSafer.Notification();
 }

@@ -14,6 +14,7 @@ set (SOURCE_FILES
     httprequest.cpp;
     httpserver.cpp;
     io.cpp;
+    pushsafer.cpp;
     main.cpp;
     requesthandler.cpp;
     udp.cpp;
