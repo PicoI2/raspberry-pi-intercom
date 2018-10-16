@@ -4,7 +4,7 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "build",
+            "label": "build rpi-intercom",
             "type": "shell",
             "command": "make rpi-intercom",
             "problemMatcher": [
@@ -12,11 +12,11 @@
             ],
             "group": {
                 "kind": "build",
-                "isDefault": true
+                "isDefault": false
             }
         },
         {
-            "label": "build client",
+            "label": "build rpi-intercom-client",
             "type": "shell",
             "command": "make rpi-intercom-client",
             "problemMatcher": [
@@ -24,7 +24,7 @@
             ],
             "group": {
                 "kind": "build",
-                "isDefault": false
+                "isDefault": true
             }
         }
     ]

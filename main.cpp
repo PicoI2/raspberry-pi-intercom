@@ -19,8 +19,8 @@ int main (int argc, char** argv)
 void CMain::Start (void)
 {
     Config.SetParameter("port-udp", "12012");
-    PushSafer.Init(&mIoService);
 #ifdef RPI_INTERCOM_SERVER
+    PushSafer.Init(&mIoService);
     cout << "Starting server...." << endl;
     Config.ReadConfigFile("server.cfg");
 #endif
@@ -29,7 +29,7 @@ void CMain::Start (void)
     Config.ReadConfigFile("client.cfg");
 #endif
     
-#ifdef RPI_INTERCOM_SERVER    
+#ifdef RPI_INTERCOM_SERVER
     IO.Start(&mIoService);
     IO.AddInput(20);
     IO.AddInput(21);
@@ -49,5 +49,7 @@ void CMain::OnInput (const int aGpio, const bool abValue) {
     Udp.SendBroadcast(Message);
     string Message2 = "nobroadcast";
     Udp.Send(Message2);
+    #ifdef RPI_INTERCOM_SERVER
     PushSafer.Notification();
+    #endif
 }
