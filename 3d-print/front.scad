@@ -8,9 +8,9 @@ difference () {
     // Empty box
     translate ([thickness, thickness, thickness]) cube ([width-2*thickness, deph, height]);
     // Camera hole
-    translate ([0.5 * width, 1.5 * thickness, 0.80 * height]) rotate ([90,0,0]) cylinder (h = 2*thickness, r = (cam_diameter+margin)/2);
+    translate ([0.5 * width, 1.5 * thickness, 0.80 * height]) rotate ([90,0,0]) cylinder (h = 2*thickness, r = (cam_diameter)/2);
     // Button hole
-    translate ([0.8 * width, 1.5 * thickness, 0.15 * height]) rotate ([90,0,0]) cylinder (h = 2*thickness, r = (button_diameter+margin)/2);
+    translate ([0.8 * width, 1.5 * thickness, 0.15 * height]) rotate ([90,0,0]) cylinder (h = 2*thickness, r = (button_diameter)/2);
     // Name hole
     // translate ([0.1 * width, 0, 0.1 * height]) cube ([0.5 * width, 1, 0.1 * height]);
     // Speaker grid

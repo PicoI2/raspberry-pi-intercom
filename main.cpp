@@ -83,7 +83,7 @@ void CMain::Start ()
 void CMain::OnInput (const int aGpio, const bool abValue) {
     cout << "InputSignal " << aGpio << " " << abValue << endl;
     string Message = "doorbell";
-    Udp.SendBroadcast(Message);
+    Udp.Send(Message);
     PushSafer.Notification("Someone is at your door");
 }
 

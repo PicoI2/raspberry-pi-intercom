@@ -11,7 +11,6 @@ public :
     void StartListening (void);
     void ReceiveFrom (const boost::system::error_code& error, std::size_t bytes_transferred);
     void Send (std::string aMessage);
-    void SendBroadcast (std::string aMessage);
 
     boost::signals2::signal <void (const std::string Message, const udp::endpoint From)> MessageSignal;
 
@@ -20,6 +19,7 @@ public :
     std::array<char, 255> mBuffer;
     udp::endpoint mRemoteEndPoint;
     unsigned long mUdpPort;
+    boost::asio::ip::address mRemoteAddress;
 };
 
 extern CUdp Udp;
