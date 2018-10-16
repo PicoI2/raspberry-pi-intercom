@@ -1,32 +1,39 @@
 #include "httpserver.h"
 
+using namespace std;
+
+CHttpServer HttpServer;
+
 // Constructor
-CHttpServer::CHttpServer(boost::asio::io_service& aIoService, int aPort)
-	: mIoService(aIoService)
-	, mAcceptor(aIoService, tcp::endpoint(tcp::v4(), aPort))
+bool CHttpServer::Start(boost::asio::io_service* apIoService, int aPort)
 {
+	mpIoService = apIoService;
+	mpAcceptor = new tcp::acceptor(*mpIoService, tcp::endpoint(tcp::v4(), aPort));
 	StartAccept();
+	return true;
 }
-			
+
 // Start or restart listen on server socket
 void CHttpServer::StartAccept()
 {
-	CHttpConnection::pointer NewConnection = CHttpConnection::pointer(new CHttpConnection (mIoService));
-				
-	mAcceptor.async_accept(NewConnection->socket(),
+	CHttpConnection::pointer NewConnection = CHttpConnection::pointer(new CHttpConnection (*mpIoService));
+
+	mpAcceptor->async_accept(NewConnection->socket(),
 		[this, NewConnection] (auto error) {this->HandleAccept(NewConnection, error);}
 	);
 
-	std::cout << "Listening " << mAcceptor.local_endpoint() << std::endl;
+	cout << "Listening " << mpAcceptor->local_endpoint() << endl;
 }
 
 // Callback on new client connection			
 void CHttpServer::HandleAccept(CHttpConnection::pointer aNewConnection, const boost::system::error_code& error)
 {
-	if (!error)
-	{
+	if (!error)	{
 		aNewConnection->Init();
-		std::cout << "Connection of client: " << aNewConnection->ToString() << std::endl;
+		cout << "Connection of client: " << aNewConnection->ToString() << endl;
+    }
+    else {
+        cerr << error.message() << endl;
 	}
 	StartAccept();	// Accept next client
 }

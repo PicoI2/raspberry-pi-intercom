@@ -2,7 +2,7 @@
 
 class CMain {
 public :
-    void Start (void);
+    void Start ();
     void OnInput (const int aGpio, const bool abValue);
 
     boost::asio::io_service mIoService;

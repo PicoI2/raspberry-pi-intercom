@@ -11,13 +11,15 @@ using boost::asio::ip::tcp;
 class CHttpServer
 {
 public:
-	CHttpServer(boost::asio::io_service& aIoService, int aPort);
+	bool Start(boost::asio::io_service* mpIoService, int aPort);
 
 private:
 	void StartAccept();
 	void HandleAccept(CHttpConnection::pointer aNewConnection, const boost::system::error_code& error);
 
 // Members values
-	boost::asio::io_service& mIoService;
-	tcp::acceptor mAcceptor;
+	boost::asio::io_service* mpIoService;
+	tcp::acceptor* mpAcceptor;
 };
+
+extern CHttpServer HttpServer;

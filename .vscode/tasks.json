@@ -12,18 +12,6 @@
             ],
             "group": {
                 "kind": "build",
-                "isDefault": false
-            }
-        },
-        {
-            "label": "build rpi-intercom-client",
-            "type": "shell",
-            "command": "make rpi-intercom-client",
-            "problemMatcher": [
-                "$gcc"
-            ],
-            "group": {
-                "kind": "build",
                 "isDefault": true
             }
         }

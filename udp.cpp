@@ -10,8 +10,9 @@ CUdp Udp;
 
 bool CUdp::Start (boost::asio::io_service* apIoService)
 {
+    mUdpPort = Config.GetULong("udp-port");
     mpIoService = apIoService;
-    udp::endpoint endpoint(boost::asio::ip::address::from_string("0.0.0.0"), stoul(Config.Map["port-udp"]));
+    udp::endpoint endpoint(boost::asio::ip::address::from_string("0.0.0.0"), mUdpPort);
 	mpSocket = new udp::socket(*mpIoService, endpoint);
     mpSocket->set_option(udp::socket::reuse_address(true));
     mpSocket->set_option(boost::asio::socket_base::broadcast(true));
@@ -38,12 +39,12 @@ void CUdp::ReceiveFrom (const boost::system::error_code& error, std::size_t byte
 
 void CUdp::Send (std::string aMessage)
 {
-    udp::endpoint endpoint(boost::asio::ip::address::from_string("192.168.10.54"), 12012);
+    udp::endpoint endpoint(boost::asio::ip::address::from_string(Config.GetString("server-ip")), mUdpPort);
     mpSocket->send_to(boost::asio::buffer(aMessage), endpoint);
 }
 
 void CUdp::SendBroadcast (std::string aMessage)
 {
-    udp::endpoint endpoint(boost::asio::ip::address::from_string("192.168.10.255"), 12012);
+    udp::endpoint endpoint(boost::asio::ip::address::from_string(Config.GetString("broadcast-ip")), mUdpPort);
     mpSocket->send_to(boost::asio::buffer(aMessage), endpoint);
 }

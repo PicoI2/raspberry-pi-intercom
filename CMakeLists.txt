@@ -23,16 +23,5 @@ set (SOURCE_FILES
     udp.cpp;
 )
 
-set (SOURCE_FILES_CLIENT
-    config.cpp;
-    main.cpp;
-    udp.cpp;
-)
-
 add_executable(rpi-intercom ${SOURCE_FILES})
 target_link_libraries(rpi-intercom pthread boost_system)
-target_compile_definitions(rpi-intercom PRIVATE RPI_INTERCOM_SERVER)
-
-add_executable(rpi-intercom-client ${SOURCE_FILES_CLIENT})
-target_compile_definitions(rpi-intercom-client PRIVATE RPI_INTERCOM_CLIENT)
-target_link_libraries(rpi-intercom-client pthread boost_system)

@@ -18,6 +18,7 @@ public :
     udp::socket* mpSocket;
     std::array<char, 255> mBuffer;
     udp::endpoint mRemoteEndPoint;
+    unsigned long mUdpPort;
 };
 
 extern CUdp Udp;

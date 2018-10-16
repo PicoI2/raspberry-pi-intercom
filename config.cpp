@@ -10,7 +10,7 @@ CConfig Config;
 
 void CConfig::SetParameter(string aParam, string aValue)
 {
-    Map[aParam] = aValue;
+    mMap[aParam] = aValue;
 }
 
 bool CConfig::ReadConfigFile (std::string aFileName)
@@ -31,3 +31,38 @@ bool CConfig::ReadConfigFile (std::string aFileName)
     return bRes;
 }
 
+unsigned long CConfig::GetULong(string aParam, bool abMandatory)
+{
+    auto it = mMap.find(aParam);
+    if (it != mMap.end()) {
+        try {
+            return stoul(it->second);
+        }
+        catch (const std::exception& e) {
+            cerr << aParam << " '" << it->second << "' " << "not a number" << endl;    
+            exit(0);
+        }
+    }
+    else if (abMandatory) {
+        cerr << "Missing " << aParam << "parameter" << endl;
+        exit(0);
+    }
+    else {
+        return 0;
+    }
+}
+
+string CConfig::GetString(string aParam, bool abMandatory)
+{
+    auto it = mMap.find(aParam);
+    if (it != mMap.end()) {
+        return it->second;
+    }
+    else if (abMandatory) {
+        cerr << "Missing " << aParam << "parameter" << endl;
+        exit(0);
+    }
+    else {
+        return "";
+    }
+}

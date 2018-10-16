@@ -5,11 +5,11 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "rpi-intercom",
+            "name": "rpi-intercom server",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/rpi-intercom",
-            "args": [],
+            "args": ["config-server.cfg"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
@@ -25,11 +25,11 @@
             "preLaunchTask": "build rpi-intercom"
         },
         {
-            "name": "rpi-intercom-client",
+            "name": "rpi-intercom client",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/rpi-intercom-client",
-            "args": [],
+            "program": "${workspaceFolder}/rpi-intercom",
+            "args": ["config-client.cfg"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
@@ -42,7 +42,7 @@
                     "ignoreFailures": true
                 }
             ],
-            "preLaunchTask": "build rpi-intercom-client"
+            "preLaunchTask": "build rpi-intercom"
         }
     ]
 }

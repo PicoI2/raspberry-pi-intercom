@@ -12,33 +12,39 @@ CMain Main;
 
 int main (int argc, char** argv)
 {
-    Main.Start();
+    char* pNameConfigFile = nullptr;
+    if (1 < argc && Config.ReadConfigFile(argv[1])) {
+        Main.Start();
+    }
+    else {
+        cerr << "Missing config file" << endl;
+    }
+
 	return 0;
 }
 
-void CMain::Start (void)
+void CMain::Start ()
 {
-    Config.SetParameter("port-udp", "12012");
-#ifdef RPI_INTERCOM_SERVER
-    PushSafer.Init(&mIoService);
-    cout << "Starting server...." << endl;
-    Config.ReadConfigFile("server.cfg");
-#endif
-#ifdef RPI_INTERCOM_CLIENT
-    cout << "Starting client...." << endl;
-    Config.ReadConfigFile("client.cfg");
-#endif
-    
-#ifdef RPI_INTERCOM_SERVER
-    IO.Start(&mIoService);
-    IO.AddInput(20);
-    IO.AddInput(21);
-    IO.AddOutput(26, true);
-    IO.InputSignal.connect([=](const int aGpio, const bool abValue){
-        OnInput(aGpio, abValue);
-    });
-    CHttpServer server(mIoService, 12080);
-#endif
+    bool bRes = true;
+    if ("server" == Config.GetString("mode")) {
+        cout << "Starting server...." << endl;
+        PushSafer.Init(&mIoService);
+        IO.Start(&mIoService);
+        IO.AddInput(Config.GetULong("input-ringbell"));
+        IO.AddOutput(Config.GetULong("output-door-open"), true);
+        IO.InputSignal.connect([=](const int aGpio, const bool abValue){
+            OnInput(aGpio, abValue);
+        });
+        HttpServer.Start(&mIoService, stoul(Config.GetString("http-port")));
+    }
+    else if ("client" == Config.GetString("mode")) {
+        cout << "Starting client...." << endl;
+    }
+    else {
+        cerr << "Unknown mode in config file" << endl;
+        exit(0);
+    }
+
     Udp.Start(&mIoService);
     mIoService.run();
 }
@@ -47,9 +53,5 @@ void CMain::OnInput (const int aGpio, const bool abValue) {
     cout << "InputSignal " << aGpio << " " << abValue << endl;
     string Message = "doorbell";
     Udp.SendBroadcast(Message);
-    string Message2 = "nobroadcast";
-    Udp.Send(Message2);
-    #ifdef RPI_INTERCOM_SERVER
     PushSafer.Notification();
-    #endif
 }
