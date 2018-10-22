@@ -26,5 +26,10 @@ difference () {
             for (z = [-micro_diameter/2 : 2 : micro_diameter/2]) {
                 translate ([x, 0, z]) cube ([1, 2*thickness, 1]);
             }
-        };    
+        };
+    // Name
+    translate ([0.08 * width, thickness+margin, 0.12 * height])
+        rotate ([90,0,0]) linear_extrude(height = thickness+2*margin)  
+         text(name, , font = "Stencil", size = 7);
 };
+

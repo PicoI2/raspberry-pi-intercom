@@ -8,3 +8,4 @@ button_diameter = 24.2;
 speaker_diameter = 27;
 micro_diameter = 6;
 margin = 0.4;
+name = "DOORBELL";
