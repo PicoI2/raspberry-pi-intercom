@@ -11,7 +11,9 @@ difference () {
     // Remove place for face
     translate ([-margin, -deph, 0]) cube ([width+2*margin, 2*deph, height + 2*margin]);
     // Hole for wires
-    translate ([thickness, deph-0.5*thickness, 0.4 * height]) cube ([20, 2*thickness, 30]);    
+    translate ([thickness, deph-0.5*thickness, 0.4 * height]) cube ([20, 2*thickness, 30]);
+    // Screw hole
+    translate ([0.5 * width, 0.75 * deph, -thickness-margin]) cylinder (h = 2*thickness, r = thickness);
 };
 
 // Support for rpi
