@@ -13,7 +13,6 @@ set(BOOST_MIN_VERSION "1.39.0")
 find_package(Boost ${BOOST_MIN_VERSION} REQUIRED COMPONENTS system)
 
 set (SOURCE_FILES
-    audio.cpp;
     config.cpp;
     http.cpp;
     httpconnection.cpp;
@@ -23,6 +22,7 @@ set (SOURCE_FILES
     pushsafer.cpp;
     main.cpp;
     requesthandler.cpp;
+    ring.cpp;
     udp.cpp;
 )
 

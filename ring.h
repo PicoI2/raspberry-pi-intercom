@@ -5,9 +5,9 @@
 
 using namespace std;
 
-class CAudio {
+class CRing {
 public :
-    void Ring ();
+    void Start ();
     void Stop ();
 protected :
     void Thread ();
@@ -15,4 +15,4 @@ protected :
     atomic<bool> mbPlaying;
 };
 
-extern CAudio Audio;
+extern CRing Ring;

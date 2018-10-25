@@ -8,7 +8,7 @@
 #include "main.h"
 #include "config.h"
 #include "pushsafer.h"
-#include "audio.h"
+#include "ring.h"
 
 CMain Main;
 
@@ -90,7 +90,7 @@ void CMain::OnInput (const int aGpio, const bool abValue) {
 // When an UDP message is received
 void CMain::OnMessage (const string aMessage) {
     if (string::npos != aMessage.find("doorbell")) {
-        Audio.Ring();
+        Ring.Start();
     }
     else {
         cout << "Received unknown message :'" << aMessage << "'" << endl;
@@ -108,7 +108,7 @@ bool CMain::OnRequest (const CHttpRequest& aHttpRequest) {
             }
         }
         else if ("/stopring" == aHttpRequest.mUri) {
-            Audio.Stop();
+            Ring.Stop();
             bRes = true;
         }
     }
@@ -119,7 +119,7 @@ bool CMain::OnRequest (const CHttpRequest& aHttpRequest) {
 void CMain::OnExit (const boost::system::error_code& error, int signal_number)
 {
     cout << " Exit on signal " << signal_number << endl;
-    Audio.Stop();
+    Ring.Stop();
     HttpServer.Stop();
     IO.Stop();
     Udp.Stop();

@@ -1,4 +1,4 @@
-#include "audio.h"
+#include "ring.h"
 
 #include <iostream>
 #include <fstream>
@@ -7,9 +7,9 @@
 
 #define PCM_DEVICE "default"
 
-CAudio Audio;
+CRing Ring;
 
-void CAudio::Ring()
+void CRing::Start()
 {
     if (!mbPlaying) {
         mbPlaying = true;
@@ -19,7 +19,7 @@ void CAudio::Ring()
     }
 }
 
-void CAudio::Thread()
+void CRing::Thread()
 {
     FILE* pFile = fopen("ring.wav", "rb");
     bool bOk = (pFile != NULL);
@@ -153,7 +153,7 @@ void CAudio::Thread()
     mbPlaying = false;
 }
 
-void CAudio::Stop()
+void CRing::Stop()
 {
     mbPlaying = false;
     if (mThread.joinable()) {
