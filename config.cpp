@@ -44,7 +44,7 @@ unsigned long CConfig::GetULong(string aParam, bool abMandatory)
         }
     }
     else if (abMandatory) {
-        cerr << "Missing " << aParam << "parameter" << endl;
+        cerr << "Missing " << aParam << " parameter" << endl;
         exit(0);
     }
     else {
@@ -59,7 +59,7 @@ string CConfig::GetString(string aParam, bool abMandatory)
         return it->second;
     }
     else if (abMandatory) {
-        cerr << "Missing " << aParam << "parameter" << endl;
+        cerr << "Missing " << aParam << " parameter" << endl;
         exit(0);
     }
     else {

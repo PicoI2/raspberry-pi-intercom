@@ -20,7 +20,7 @@ void CAudio::Play()
 
 void CAudio::Push (CAudioSample* apSample) {
     Play();
-    Record();
+    // Record();
     mMutexQueue.lock();
     mSamplesQueue.push(apSample);
     mMutexQueue.unlock();
@@ -120,28 +120,28 @@ void CAudio::RecordThread()
     }
 
     cout << "audio interface opened" << endl;
-            
+
     if ((err = snd_pcm_hw_params_malloc (&hw_params)) < 0) {
         cerr << "cannot allocate hardware parameter structure " << snd_strerror (err) << ")" << endl;
         return;
     }
 
     cout << "hw_params allocated" << endl;
-                    
+
     if ((err = snd_pcm_hw_params_any (capture_handle, hw_params)) < 0) {
         cerr << "cannot initialize hardware parameter structure " << snd_strerror (err) << ")" << endl;
         return;
     }
 
     cout << "hw_params initialized" << endl;
-        
+
     if ((err = snd_pcm_hw_params_set_access (capture_handle, hw_params, SND_PCM_ACCESS_RW_INTERLEAVED)) < 0) {
         cerr << "cannot set access type " << snd_strerror (err) << ")" << endl;
         return;
     }
 
     cout << "hw_params access setted" << endl;
-        
+
     if ((err = snd_pcm_hw_params_set_format (capture_handle, hw_params, format)) < 0) {
         cerr << "cannot set sample format " << snd_strerror (err) << ")" << endl;
         return;
@@ -153,7 +153,7 @@ void CAudio::RecordThread()
         cerr << "cannot set sample rate " << snd_strerror (err) << ")" << endl;
         return;
     }
-        
+
     cout << "hw_params rate setted to:" << rate << endl;
 
     if ((err = snd_pcm_hw_params_set_channels (capture_handle, hw_params, 1)) < 0) {
@@ -162,18 +162,18 @@ void CAudio::RecordThread()
     }
 
     cout << "hw_params channels setted" << endl;
-        
+
     if ((err = snd_pcm_hw_params (capture_handle, hw_params)) < 0) {
         cerr << "cannot set parameters " << snd_strerror (err) << ")" << endl;
         return;
     }
 
     cout << "hw_params setted" << endl;
-        
+
     snd_pcm_hw_params_free (hw_params);
 
     cout << "hw_params freed" << endl;
-        
+
     if ((err = snd_pcm_prepare (capture_handle)) < 0) {
         cerr << "cannot prepare audio interface for use " << snd_strerror (err) << ")" << endl;
         return;
