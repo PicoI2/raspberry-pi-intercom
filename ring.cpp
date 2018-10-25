@@ -1,11 +1,10 @@
 #include "ring.h"
+#include "config.h"
 
 #include <iostream>
 #include <fstream>
 #include <alsa/asoundlib.h>
 #include <stdio.h>
-
-#define PCM_DEVICE "default"
 
 CRing Ring;
 
@@ -87,11 +86,16 @@ void CRing::Thread()
     while (bOk && mbPlaying && nbPlay--) {
         fseek(pFile, StartPos, SEEK_SET);
         unsigned int pcm;
+
+        const char* name = Config.GetString("sound-card-play").c_str();
+        if ('\0' == name[0]) {
+            name = "default";
+        }
         
         /* Open the PCM device in playback mode */
         snd_pcm_t *pcm_handle;
-        if (pcm = snd_pcm_open(&pcm_handle, PCM_DEVICE, SND_PCM_STREAM_PLAYBACK, 0) < 0) {
-            printf("ERROR: Can't open \"%s\" PCM device. %s\n", PCM_DEVICE, snd_strerror(pcm));
+        if (pcm = snd_pcm_open(&pcm_handle, name, SND_PCM_STREAM_PLAYBACK, 0) < 0) {
+            printf("ERROR: Can't open \"%s\" PCM device. %s\n", name, snd_strerror(pcm));
         }
 
         /* Allocate parameters object and fill it with default values*/

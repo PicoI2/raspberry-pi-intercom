@@ -5,6 +5,7 @@
 #include <boost/bind.hpp>
 #include "udp.h"
 #include "config.h"
+#include "audio.h"
 
 CUdp Udp;
 
@@ -43,9 +44,16 @@ void CUdp::StartListening (void)
 
 void CUdp::ReceiveFrom (const boost::system::error_code& error, std::size_t bytes_transferred)
 {
-    std::string Message(mBuffer.begin(), mBuffer.begin()+bytes_transferred);
-    cout << "Receive : " << Message << " from : " << mRemoteEndPoint << endl;
-    MessageSignal(Message, mRemoteEndPoint);
+    if (SAMPLE_SIZE==bytes_transferred) {
+        CAudioSample* pSample = new CAudioSample();
+        memcpy(pSample->buf, mBuffer.data(), SAMPLE_SIZE);
+        Audio.Push(pSample);
+    }
+    else {
+        std::string Message(mBuffer.begin(), mBuffer.begin()+bytes_transferred);
+        cout << "Receive : " << Message << " from : " << mRemoteEndPoint << endl;
+        MessageSignal(Message, mRemoteEndPoint);
+    }
     StartListening();
 }
 
@@ -53,4 +61,10 @@ void CUdp::Send (std::string aMessage)
 {
     udp::endpoint endpoint(mRemoteAddress, mUdpPort);
     mpSocket->send_to(boost::asio::buffer(aMessage), endpoint);
+}
+
+void CUdp::Send (char* aPacket, size_t aSize)
+{
+    udp::endpoint endpoint(mRemoteAddress, mUdpPort);
+    mpSocket->send_to(boost::asio::buffer(aPacket, aSize), endpoint);
 }
