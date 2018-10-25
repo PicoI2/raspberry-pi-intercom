@@ -9,6 +9,7 @@
 #include "config.h"
 #include "pushsafer.h"
 #include "ring.h"
+#include "audio.h"
 
 CMain Main;
 
@@ -60,12 +61,6 @@ void CMain::Start ()
         IO.InputSignal.connect([=](const int aGpio, const bool abValue){
             OnInput(aGpio, abValue);
         });
-        thread ([](){
-            system("./pjsua --config-file pjsua-server.conf");
-            cerr << "Pjsua exit" << endl;
-            PushSafer.Notification("Error: rpi-intercom server stoped");
-            terminate();
-        });
     }
     else if ("client" == Config.GetString("mode")) {
         cout << "Starting client...." << endl;
@@ -82,9 +77,11 @@ void CMain::Start ()
 // When an input change
 void CMain::OnInput (const int aGpio, const bool abValue) {
     cout << "InputSignal " << aGpio << " " << abValue << endl;
-    string Message = "doorbell";
-    Udp.Send(Message);
-    PushSafer.Notification("Someone is at your door");
+    // string Message = "doorbell";
+    // Udp.Send(Message);
+    // PushSafer.Notification("Someone is at your door");
+    Audio.Record();
+    Audio.Play();
 }
 
 // When an UDP message is received
@@ -123,5 +120,6 @@ void CMain::OnExit (const boost::system::error_code& error, int signal_number)
     HttpServer.Stop();
     IO.Stop();
     Udp.Stop();
+    Audio.Stop();
     exit(0);
 }
