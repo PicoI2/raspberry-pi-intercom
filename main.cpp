@@ -36,12 +36,6 @@ void CMain::Start ()
         OnExit(error, signal_number);
     });
 
-    // Start HttpServer
-    HttpServer.Start(&mIoService, stoul(Config.GetString("http-port")));
-    HttpServer.RequestSignal.connect([=](const CHttpRequest& aHttpRequest){
-        return OnRequest(aHttpRequest);
-    });
-
     // Start UDP
     Udp.Start(&mIoService);
     Udp.MessageSignal.connect([=](const std::string Message, const udp::endpoint From){
@@ -64,6 +58,11 @@ void CMain::Start ()
     }
     else if ("client" == Config.GetString("mode")) {
         cout << "Starting client...." << endl;
+        // Start HttpServer
+        HttpServer.Start(&mIoService, stoul(Config.GetString("http-port")));
+        HttpServer.RequestSignal.connect([=](const CHttpRequest& aHttpRequest){
+            return OnRequest(aHttpRequest);
+        });
     }
     else {
         cerr << "Unknown mode in config file" << endl;
@@ -77,17 +76,24 @@ void CMain::Start ()
 // When an input change
 void CMain::OnInput (const int aGpio, const bool abValue) {
     cout << "InputSignal " << aGpio << " " << abValue << endl;
-    // string Message = "doorbell";
-    // Udp.Send(Message);
-    // PushSafer.Notification("Someone is at your door");
-    Audio.Record();
-    Audio.Play();
+    string Message = "doorbell";
+    Udp.Send(Message);
+    PushSafer.Notification("Someone is at your door");
 }
 
 // When an UDP message is received
 void CMain::OnMessage (const string aMessage) {
     if (string::npos != aMessage.find("doorbell")) {
         Ring.Start();
+    }
+    else if (string::npos != aMessage.find("record")) {
+        Audio.Record();
+    }
+    else if (string::npos != aMessage.find("hangup")) {
+        Audio.Stop();
+    }
+    else if (string::npos != aMessage.find("dooropen")) {
+        IO.SetOutput(26, true, 2000);
     }
     else {
         cout << "Received unknown message :'" << aMessage << "'" << endl;
@@ -98,14 +104,28 @@ void CMain::OnMessage (const string aMessage) {
 bool CMain::OnRequest (const CHttpRequest& aHttpRequest) {
     bool bRes;
     if (aHttpRequest.mMethod == http::method::PUT) {
-        if ("/dooropen" == aHttpRequest.mUri) {
-            if (IO.SetOutput(26, true, 2000))
-            {
-                bRes = true;
-            }
-        }
-        else if ("/stopring" == aHttpRequest.mUri) {
+        if ("/stopring" == aHttpRequest.mUri) {
             Ring.Stop();
+            bRes = true;
+        }
+        else if ("/startlisten" == aHttpRequest.mUri) {
+            Ring.Stop();
+            Udp.Send("record");
+            bRes = true;
+        }
+        else if ("/startspeaking" == aHttpRequest.mUri) {
+            Ring.Stop();
+            Audio.Record();
+            bRes = true;
+        } else if ("/dooropen" == aHttpRequest.mUri) {
+            Ring.Stop();
+            Udp.Send("dooropen");
+            bRes = true;
+        }
+        else if ("/hangup" == aHttpRequest.mUri) {
+            Udp.Send("hangup");
+            Ring.Stop();
+            Audio.Stop();
             bRes = true;
         }
     }

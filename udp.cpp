@@ -46,7 +46,7 @@ void CUdp::StartListening (void)
 void CUdp::ReceiveFrom (const boost::system::error_code& error, std::size_t bytes_transferred)
 {
     if (SAMPLE_SIZE==bytes_transferred) {
-        CAudioSample* pSample = new CAudioSample();
+        CAudioSample::Ptr pSample (new CAudioSample());
         memcpy(pSample->buf, mBuffer.data(), SAMPLE_SIZE);
         Audio.Push(pSample);
     }

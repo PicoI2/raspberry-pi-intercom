@@ -18,9 +18,8 @@ void CAudio::Play()
     }
 }
 
-void CAudio::Push (CAudioSample* apSample) {
+void CAudio::Push (CAudioSample::Ptr apSample) {
     Play();
-    // Record();
     mMutexQueue.lock();
     mSamplesQueue.push(apSample);
     mMutexQueue.unlock();
@@ -69,7 +68,7 @@ void CAudio::PlayThread()
         printf("ERROR: Can't set hardware parameters. %s\n", snd_strerror(err));{
     }
 
-    CAudioSample* pSample = nullptr;
+    CAudioSample::Ptr pSample;
     while (mbPlay) {
         while (mSamplesQueue.empty()){
             // cout << "waiting for samples" << endl;
@@ -86,7 +85,6 @@ void CAudio::PlayThread()
             printf("ERROR. Can't write to PCM device. %s\n", snd_strerror(err));
             break;
         }
-        delete pSample;
     }
 
     snd_pcm_drain(pcm_handle);
@@ -205,4 +203,9 @@ void CAudio::Stop()
     if (mPlayThread.joinable()) {
         mPlayThread.join();
     }
+    mMutexQueue.lock();
+    while (!mSamplesQueue.empty()) {
+        mSamplesQueue.pop();
+    }
+    mMutexQueue.unlock();
 }

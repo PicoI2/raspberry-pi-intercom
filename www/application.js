@@ -1,13 +1,13 @@
 angular.module("ngApp", [])
 .controller("intercomController", function($http) {
     let me = this;
-    me.stopring = function () {
-        $http.put("/stopring").then(
+    me.put = function (msg) {
+        $http.put(msg).then(
             function (response){
-                console.log("post stopring OK");
+                console.log(`put ${msg} OK`);
             }, 
             function (response){
-                console.log("post stopring failed");
+                console.log(`put ${msg} failed`);
             }
         );
     };

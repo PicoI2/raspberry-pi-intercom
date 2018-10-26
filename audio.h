@@ -14,13 +14,15 @@ using namespace std;
 #define SAMPLE_SIZE (FRAME_SIZE * FRAME_BY_SAMPLE)    // 882 (16bits at 44.1khz mono)
 
 struct CAudioSample {
+    typedef shared_ptr<CAudioSample> Ptr;
     char buf [SAMPLE_SIZE];
 };
 
 class CAudio {
 public :
+    
     void Play ();
-    void Push (CAudioSample* apSample);
+    void Push (CAudioSample::Ptr apSample);
     void Record ();
     void Stop ();
 protected :
@@ -31,7 +33,7 @@ protected :
     thread mRecordThread;
     atomic<bool> mbRecord;
     mutex mMutexQueue;
-    queue<CAudioSample*> mSamplesQueue;
+    queue<CAudioSample::Ptr> mSamplesQueue;
 };
 
 extern CAudio Audio;

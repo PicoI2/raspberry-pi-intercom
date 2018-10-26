@@ -39,6 +39,13 @@ void CHttpRequest::Parse ()
 
         mMimeType = http::mime::GetMimeType(mUri);
     }
+    // To redirect GET '/' to GET '/index.html'
+    if (bRes) {
+        if (mMimeType.empty() && "GET" == mMethod && "/" == mUri) {
+            mUri = "/index.html";
+            mMimeType = http::mime::HTML;
+        }
+    }
 
     cout << mMethod << " " << mUri  << " mime:'" << mMimeType << "'" << endl;
 }

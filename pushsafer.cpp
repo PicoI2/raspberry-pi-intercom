@@ -88,27 +88,31 @@ Content-Type: multipart/form-data; boundary=------------------------3173acd4f807
 
     tcp::resolver Resolver(*mpIoService);
     tcp::resolver::query Query("www.pushsafer.com", "http");
-    tcp::resolver::iterator EndpointIterator = Resolver.resolve(Query);
-    tcp::resolver::iterator End;
+    try {
+        tcp::resolver::iterator EndpointIterator = Resolver.resolve(Query);
 
-    tcp::socket Socket(*mpIoService);
-    boost::system::error_code error = boost::asio::error::host_not_found;
-    Socket.connect(*EndpointIterator, error);
+        tcp::socket Socket(*mpIoService);
+        boost::system::error_code error = boost::asio::error::host_not_found;
+        Socket.connect(*EndpointIterator, error);
 
-    if (error) {
-        tcp::endpoint endpoint = *EndpointIterator;
-        cout << "Error connecting to: " << endpoint << endl;
+        if (error) {
+            tcp::endpoint endpoint = *EndpointIterator;
+            cout << "Error connecting to: " << endpoint << endl;
+        }
+        else {
+            boost::asio::write(Socket, boost::asio::buffer(Request));
+            
+            // TODO Do something else
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
+            std::array<char, 4096> Buffer;
+            size_t Read = Socket.read_some(boost::asio::buffer(Buffer));
+            std::string Reply(Buffer.begin(), Buffer.begin() + Read);
+            cout << Reply << endl;;
+        }
+        Socket.close();
     }
-    else {
-        boost::asio::write(Socket, boost::asio::buffer(Request));
-        
-        // TODO Do something else
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-
-        std::array<char, 4096> Buffer;
-        size_t Read = Socket.read_some(boost::asio::buffer(Buffer));
-        std::string Reply(Buffer.begin(), Buffer.begin() + Read);
-        cout << Reply << endl;;
+    catch (std::exception& e) {
+        cerr << "Cannot access " << Query.host_name() << endl;
     }
-    Socket.close();
 }
