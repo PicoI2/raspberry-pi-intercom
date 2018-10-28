@@ -60,7 +60,7 @@ void CMain::Start ()
         cout << "Starting client...." << endl;
         // Start HttpServer
         HttpServer.Start(&mIoService, stoul(Config.GetString("http-port")));
-        HttpServer.RequestSignal.connect([=](const CHttpRequest& aHttpRequest){
+        HttpServer.RequestSignal.connect([=](const WSRequest& aHttpRequest){
             return OnRequest(aHttpRequest);
         });
     }
@@ -101,28 +101,28 @@ void CMain::OnMessage (const string aMessage) {
 }
 
 // When an HTTP Request does not concern a file
-bool CMain::OnRequest (const CHttpRequest& aHttpRequest) {
+bool CMain::OnRequest (const WSRequest& aHttpRequest) {
     bool bRes;
-    if (aHttpRequest.mMethod == http::method::PUT) {
-        if ("/stopring" == aHttpRequest.mUri) {
+    if (aHttpRequest.get_method() == http::method::PUT) {
+        if ("/stopring" == aHttpRequest.get_uri()) {
             Ring.Stop();
             bRes = true;
         }
-        else if ("/startlisten" == aHttpRequest.mUri) {
+        else if ("/startlisten" == aHttpRequest.get_uri()) {
             Ring.Stop();
             Udp.Send("record");
             bRes = true;
         }
-        else if ("/startspeaking" == aHttpRequest.mUri) {
+        else if ("/startspeaking" == aHttpRequest.get_uri()) {
             Ring.Stop();
             Audio.Record();
             bRes = true;
-        } else if ("/dooropen" == aHttpRequest.mUri) {
+        } else if ("/dooropen" == aHttpRequest.get_uri()) {
             Ring.Stop();
             Udp.Send("dooropen");
             bRes = true;
         }
-        else if ("/hangup" == aHttpRequest.mUri) {
+        else if ("/hangup" == aHttpRequest.get_uri()) {
             Udp.Send("hangup");
             Ring.Stop();
             Audio.Stop();
