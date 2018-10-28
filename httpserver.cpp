@@ -1,5 +1,6 @@
 #include "http.h"
 #include "httpserver.h"
+#include "audio.h"
 
 #include <iostream>
 #include <fstream>
@@ -35,7 +36,14 @@ void CHttpServer::Stop()
 
 void CHttpServer::OnMessage(websocketpp::connection_hdl hdl, WSServer::message_ptr msg)
 {
-	cout << "OnMessage (TODO)" << endl;
+	string Message = msg->get_payload();
+	cout << "OnMessage, message length: " << Message.length() << endl;
+
+	for (size_t i=0; i<Message.length()/SAMPLE_SIZE; ++i) {
+		CAudioSample::Ptr pSample (new CAudioSample());
+		memcpy(pSample->buf, Message.data()+(i*SAMPLE_SIZE), SAMPLE_SIZE);
+		Audio.Push(pSample);	
+	}
 }
 
 void CHttpServer::OnHttp(websocketpp::connection_hdl hdl)
@@ -68,10 +76,11 @@ void CHttpServer::OnHttp(websocketpp::connection_hdl hdl)
         }
     }
 	// Or return OK if request has been understood by main
-    else if (RequestSignal(Request)) {
-        ConnectionPtr->set_status(websocketpp::http::status_code::ok);
+    else {
+		RequestSignal(Request);
+		// Response = RequestSignal(Request);	// TOTO Make this work
+		ConnectionPtr->set_body(Response);
+		ConnectionPtr->set_status(websocketpp::http::status_code::ok);
     }
-
-	
 	mServer.start_accept();
 }

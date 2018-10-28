@@ -101,35 +101,42 @@ void CMain::OnMessage (const string aMessage) {
 }
 
 // When an HTTP Request does not concern a file
-bool CMain::OnRequest (const WSRequest& aHttpRequest) {
-    bool bRes;
+string CMain::OnRequest (const WSRequest& aHttpRequest) {
+    string Result;
     if (aHttpRequest.get_method() == http::method::PUT) {
         if ("/stopring" == aHttpRequest.get_uri()) {
             Ring.Stop();
-            bRes = true;
+            Result = "OK";
         }
         else if ("/startlisten" == aHttpRequest.get_uri()) {
             Ring.Stop();
             Udp.Send("record");
-            bRes = true;
+            Result = "OK";
         }
         else if ("/startspeaking" == aHttpRequest.get_uri()) {
             Ring.Stop();
             Audio.Record();
-            bRes = true;
+            Result = "OK";
         } else if ("/dooropen" == aHttpRequest.get_uri()) {
             Ring.Stop();
             Udp.Send("dooropen");
-            bRes = true;
+            Result = "OK";
         }
         else if ("/hangup" == aHttpRequest.get_uri()) {
             Udp.Send("hangup");
             Ring.Stop();
             Audio.Stop();
-            bRes = true;
+            Result = "OK";
         }
     }
-    return bRes;
+    else if (aHttpRequest.get_method() == http::method::POST) {
+        if ("/videosrc" == aHttpRequest.get_uri()) {
+            if ("client" == Config.GetString("mode")) {
+                Result = Config.GetString("server-ip");
+            }
+        }
+    }
+    return Result;
 }
 
 // When Ctrl-C

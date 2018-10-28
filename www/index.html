@@ -8,11 +8,12 @@
     <script src="application.js"></script>
 </head>
 <body ng-controller="intercomController as ctrl">
-    <img src="http://192.168.10.54:8081" width="640" height="480"><br>
+    <img ng-src="ctrl.videoSrc" width="640" height="480"><br>
     <button ng-click="ctrl.put('/stopring')">Stop ringing</button>
     <button ng-click="ctrl.put('/startlisten')">Listen</button>
     <button ng-click="ctrl.put('/startspeaking')">Speak</button>
     <button ng-click="ctrl.put('/dooropen')">Open door</button>
     <button ng-click="ctrl.put('/hangup')">Hangup</button><br>
+    <button ng-click="ctrl.call()">Call</button><br>
 </body>
 </html>

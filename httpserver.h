@@ -18,7 +18,7 @@ class CHttpServer
 public:
 	bool Start (boost::asio::io_service* apIoService, int aPort);
 	void Stop ();
-	boost::signals2::signal <bool (const WSRequest& aHttpRequest)> RequestSignal;
+	boost::signals2::signal <string (const WSRequest& aHttpRequest)> RequestSignal;
 
 private:
 	void OnMessage(websocketpp::connection_hdl hdl, WSServer::message_ptr msg);
