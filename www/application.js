@@ -39,15 +39,18 @@ angular.module("ngApp", [])
         me.stop();
     };
     const onmessage = function (msg) {
-        console.log('websocket onmessage');
         console.log(msg.data);
-        let sampleIntArray = new Int16Array(msg.data);
-        let sampleFloatArray = new Float32Array(sampleIntArray.length);
-        for (let i=0; i<sampleIntArray.length; ++i) {
-            sampleFloatArray[i] = sampleIntArray[i] / 0x7FFF;
+        const fileReader = new FileReader();
+        // onloadend will be called once readAsArrayBuffer has finished
+        fileReader.onloadend = function () {
+            let sampleIntArray = new Int16Array(fileReader.result);
+            let sampleFloatArray = new Float32Array(sampleIntArray.length);
+            for (let i=0; i<sampleIntArray.length; ++i) {
+                sampleFloatArray[i] = sampleIntArray[i] / 0x7FFF;
+            }
+            me.stack.push(sampleFloatArray);
         }
-        console.log("sampleFloatArray", sampleFloatArray);
-        me.stack.push(sampleFloatArray);
+        fileReader.readAsArrayBuffer(msg.data);
     };
     const onerror = function () {
         console.log('websocket onerror');
