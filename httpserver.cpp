@@ -39,11 +39,13 @@ void CHttpServer::OnMessage(websocketpp::connection_hdl hdl, WSServer::message_p
 	string Message = msg->get_payload();
 	cout << "OnMessage, message length: " << Message.length() << endl;
 
-	for (size_t i=0; i<Message.length()/SAMPLE_SIZE; ++i) {
-		CAudioSample::Ptr pSample (new CAudioSample());
-		memcpy(pSample->buf, Message.data()+(i*SAMPLE_SIZE), SAMPLE_SIZE);
-		Audio.Push(pSample);	
-	}
+	// for (size_t i=0; i<Message.length()/SAMPLE_SIZE; ++i) {
+	// 	CAudioSample::Ptr pSample (new CAudioSample());
+	// 	memcpy(pSample->buf, Message.data()+(i*SAMPLE_SIZE), SAMPLE_SIZE);
+	// 	Audio.Push(pSample);	
+	// }
+
+	mServer.send(hdl, msg);
 }
 
 void CHttpServer::OnHttp(websocketpp::connection_hdl hdl)
@@ -63,6 +65,7 @@ void CHttpServer::OnHttp(websocketpp::connection_hdl hdl)
 	}
 	
 	string Response;
+	bool bOk = false;
 	// Return requested file
 	if (Method == http::method::GET && !MimeType.empty() && string::npos == Uri.find("..")) {
         ifstream RequestedFile("./www/" + Uri, std::ios::in | std::ios::binary);
@@ -73,14 +76,20 @@ void CHttpServer::OnHttp(websocketpp::connection_hdl hdl)
             }
 			ConnectionPtr->set_body(Response);
     		ConnectionPtr->set_status(websocketpp::http::status_code::ok);
+			bOk = true;
         }
     }
 	// Or return OK if request has been understood by main
-    else {
-		RequestSignal(Request);
-		// Response = RequestSignal(Request);	// TOTO Make this work
-		ConnectionPtr->set_body(Response);
-		ConnectionPtr->set_status(websocketpp::http::status_code::ok);
+    if (!bOk) {
+		auto res = RequestSignal(Request);
+		if (res) {
+			ConnectionPtr->set_body(res.get());
+			ConnectionPtr->set_status(websocketpp::http::status_code::ok);
+			bOk = true;
+		}
     }
+	if (!bOk) {
+		ConnectionPtr->set_status(websocketpp::http::status_code::bad_request);
+	}
 	mServer.start_accept();
 }

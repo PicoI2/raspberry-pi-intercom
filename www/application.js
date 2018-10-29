@@ -1,6 +1,8 @@
 angular.module("ngApp", [])
 .controller("intercomController", function($http) {
     let me = this;
+    me.stack = [];
+
     // Video src (motion) (IF SERVER)
     me.videoSrc = `${window.location.protocol}//${window.location.host.substr(0, window.location.host.lastIndexOf(':'))}:8081`;
     $http.post("videosrc").then(
@@ -34,10 +36,18 @@ angular.module("ngApp", [])
     };
     const onclose = function () {
         console.log('websocket onclose');
+        me.stop();
     };
     const onmessage = function (msg) {
         console.log('websocket onmessage');
         console.log(msg.data);
+        let sampleIntArray = new Int16Array(msg.data);
+        let sampleFloatArray = new Float32Array(sampleIntArray.length);
+        for (let i=0; i<sampleIntArray.length; ++i) {
+            sampleFloatArray[i] = sampleIntArray[i] / 0x7FFF;
+        }
+        console.log("sampleFloatArray", sampleFloatArray);
+        me.stack.push(sampleFloatArray);
     };
     const onerror = function () {
         console.log('websocket onerror');
@@ -57,18 +67,33 @@ angular.module("ngApp", [])
     // Call
     me.call = function () {
         console.log("Call...");
-        navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then( function(stream) {
+        navigator.mediaDevices.getUserMedia({ audio: true }).then( function(stream) {
             console.log("stream:", stream);
-            var context = new AudioContext();
-            var source = context.createMediaStreamSource(stream);
-            var processor = context.createScriptProcessor(1024, 1, 1);
-            source.connect(processor);
-            processor.connect(context.destination);
-            processor.onaudioprocess = function(e) {
-                me.ws.send(e.inputBuffer.getChannelData(0));
+            me.audioContext = new AudioContext();
+            me.source = me.audioContext.createMediaStreamSource(stream);
+            me.processor = me.audioContext.createScriptProcessor(1024, 1, 1);
+            me.source.connect(me.processor);
+            me.processor.connect(me.audioContext.destination);
+            me.processor.onaudioprocess = function(e) {
+                let sampleArray = new Int16Array(e.inputBuffer.getChannelData(0).length);
+                for (let i=0; i<e.inputBuffer.getChannelData(0).length; ++i) {
+                    sampleArray[i] = e.inputBuffer.getChannelData(0)[i] * 0x7FFF;
+                }
+                me.ws.send(sampleArray);
+                let sampleFloatArray = me.stack.pop();
+                if (sampleFloatArray) {
+                    for (let i=0; i<sampleFloatArray.length; ++i) {
+                        e.outputBuffer.getChannelData(0)[i] = sampleFloatArray[i];
+                    }
+                }
             };
         }).catch(function(err) {
-            /* handle the error */
+            console.log("getUserMedia error: ", err);
         });
     };
+
+    me.stop = function () {
+        me.source.disconnect(me.processor);
+        me.processor.disconnect(me.audioContext.destination);
+    }
 });
