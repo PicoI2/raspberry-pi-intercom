@@ -8,7 +8,7 @@
     <script src="application.js"></script>
 </head>
 <body ng-controller="intercomController as ctrl">
-    <img ng-src="ctrl.videoSrc" width="640" height="480"><br>
+    <img ng-src="{{ctrl.videoSrc}}" width="640" height="480"><br>
     <button ng-click="ctrl.stopring()">Stop ringing</button>
     <button ng-click="ctrl.listen()">Listen</button>
     <button ng-click="ctrl.speak()">Speak</button>

@@ -111,6 +111,7 @@ void CHttpServer::OnHttp(websocketpp::connection_hdl hdl)
             }
 			ConnectionPtr->set_body(Response);
     		ConnectionPtr->set_status(websocketpp::http::status_code::ok);
+			ConnectionPtr->append_header("Content-Type", MimeType);
 			bOk = true;
         }
     }
@@ -120,6 +121,7 @@ void CHttpServer::OnHttp(websocketpp::connection_hdl hdl)
 		if (res) {
 			ConnectionPtr->set_body(res.get());
 			ConnectionPtr->set_status(websocketpp::http::status_code::ok);
+			ConnectionPtr->append_header("Content-Type", http::mime::HTML);
 			bOk = true;
 		}
     }
