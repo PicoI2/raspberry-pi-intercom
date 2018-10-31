@@ -9,12 +9,10 @@
 </head>
 <body ng-controller="intercomController as ctrl">
     <img ng-src="ctrl.videoSrc" width="640" height="480"><br>
-    <button ng-click="ctrl.put('/stopring')">Stop ringing</button>
-    <button ng-click="ctrl.put('/startlisten')">Listen</button>
-    <button ng-click="ctrl.put('/startspeaking')">Speak</button>
-    <button ng-click="ctrl.put('/dooropen')">Open door</button>
-    <button ng-click="ctrl.put('/hangup')">Hangup</button><br>
-    <button ng-click="ctrl.call()">Call</button><br>
-    <button ng-click="ctrl.stop()">Stop</button><br>
+    <button ng-click="ctrl.stopring()">Stop ringing</button>
+    <button ng-click="ctrl.listen()">Listen</button>
+    <button ng-click="ctrl.speak()">Speak</button>
+    <button ng-click="ctrl.dooropen()">Open door</button>
+    <button ng-click="ctrl.hangup()">Hangup</button><br>
 </body>
 </html>

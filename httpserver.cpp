@@ -10,44 +10,79 @@ using namespace std;
 
 CHttpServer HttpServer;
 
+const static string ALIVE  = "alive";
+
 // Constructor
 bool CHttpServer::Start(boost::asio::io_service* apIoService, int aPort)
 {
-	// mServer.set_access_channels(websocketpp::log::alevel::all);
-    // mServer.clear_access_channels(websocketpp::log::alevel::frame_payload);
-	mServer.init_asio(apIoService);
-	// mServer.set_reuse_addr(true);
+	mpIoService = apIoService;
+
+	//mServer.set_access_channels(websocketpp::log::alevel::all);
+    mServer.clear_access_channels(websocketpp::log::alevel::all);
+	mServer.init_asio(mpIoService);
+	mServer.set_reuse_addr(true);
+	mServer.set_open_handler([this] (auto hdl) {this->OnOpen(hdl);});
+	mServer.set_close_handler([this] (auto hdl) {this->OnClose(hdl);});
 	mServer.set_message_handler([this] (auto hdl, auto message) {this->OnMessage(hdl, message);});
 	mServer.set_http_handler([this] (auto hdl) {this->OnHttp(hdl);});
 	mServer.listen(aPort);
 	mServer.start_accept();
 
+	mpInterval = new boost::posix_time::millisec(30000); // 30 seconds
+    mpTimer = new boost::asio::deadline_timer(*mpIoService, *mpInterval);
+    mpTimer->async_wait([this](const boost::system::error_code&){OnTimer();});
+
 	return true;
 }
 
+// Stop the seever and close all weboscket
 void CHttpServer::Stop()
 {
 	mServer.stop_listening();
-	// TODO
-	// set closing=true, it prevents any new connection by closing it immediately
-	// iterate over each connection and send close(conn.second->hdl_, websocketpp::close::status::going_away, "Server shuting down") ;
+	for (auto hdl : mClientList) {
+		mServer.close(hdl, websocketpp::close::status::going_away, "Server shuting down");
+	}
 }
 
+// When a client open a websocket
+void CHttpServer::OnOpen (websocketpp::connection_hdl hdl) {
+	mServer.send(hdl, ALIVE, websocketpp::frame::opcode::text);
+	mClientList.insert(hdl);
+}
 
+// When a client close a websocket
+void CHttpServer::OnClose (websocketpp::connection_hdl hdl) {
+	mClientList.erase(hdl);
+}
+
+// When a client send us a message
 void CHttpServer::OnMessage(websocketpp::connection_hdl hdl, WSServer::message_ptr msg)
 {
 	string Message = msg->get_payload();
 	cout << "OnMessage, message length: " << Message.length() << endl;
 
-	// for (size_t i=0; i<Message.length()/SAMPLE_SIZE; ++i) {
-	// 	CAudioSample::Ptr pSample (new CAudioSample());
-	// 	memcpy(pSample->buf, Message.data()+(i*SAMPLE_SIZE), SAMPLE_SIZE);
-	// 	Audio.Push(pSample);	
-	// }
-
-	mServer.send(hdl, msg);
+	for (size_t i=0; i<Message.length()/SAMPLE_SIZE; ++i) {
+		CAudioSample::Ptr pSample (new CAudioSample());
+		memcpy(pSample->buf, Message.data()+(i*SAMPLE_SIZE), SAMPLE_SIZE);
+		Audio.Push(pSample);	
+	}
 }
 
+// Broadcast text message to all clients
+void CHttpServer::SendMessage (std::string aMessage) {
+	for (auto hdl : mClientList) {
+		mServer.send(hdl, aMessage, websocketpp::frame::opcode::text);
+	}
+}
+
+// Broadcast binary message to all clients
+void CHttpServer::SendMessage (char* aMessage, size_t aSize) {
+	for (auto hdl : mClientList) {
+		mServer.send(hdl, aMessage, aSize, websocketpp::frame::opcode::binary);
+	}
+}
+
+// On HTTP request
 void CHttpServer::OnHttp(websocketpp::connection_hdl hdl)
 {
 	WSServer::connection_ptr ConnectionPtr = mServer.get_con_from_hdl(hdl);
@@ -92,4 +127,12 @@ void CHttpServer::OnHttp(websocketpp::connection_hdl hdl)
 		ConnectionPtr->set_status(websocketpp::http::status_code::bad_request);
 	}
 	mServer.start_accept();
+}
+
+void CHttpServer::OnTimer (void)
+{
+	SendMessage(ALIVE);
+	// for (websocketpp::connection_hdl hdl : mClientList) {
+		// TODO Disconnect socket if no message have been received for more than 60 seconds, after having added life message from client to server
+	// }
 }

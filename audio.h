@@ -27,6 +27,7 @@ public :
     void Push (CAudioSample::Ptr apSample);
     void Record ();
     void Stop ();
+    
 protected :
     void PlayThread ();
     thread mPlayThread;

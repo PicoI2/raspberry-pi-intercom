@@ -1,5 +1,6 @@
 #include "audio.h"
 #include "udp.h"
+#include "httpserver.h"
 #include "config.h"
 
 #include <alsa/asoundlib.h>
@@ -8,6 +9,7 @@
 
 CAudio Audio;
 
+// Start play thread
 void CAudio::Play()
 {
     if (!mbPlay) {
@@ -18,13 +20,21 @@ void CAudio::Play()
     }
 }
 
+// Push an audio sample in play queue
 void CAudio::Push (CAudioSample::Ptr apSample) {
-    Play();
-    mMutexQueue.lock();
-    mSamplesQueue.push(apSample);
-    mMutexQueue.unlock();
+    if (mbPlay) {
+        mMutexQueue.lock();
+        // If more than 100 samples in queue (~2 seconds), delete the older one.
+        if (mSamplesQueue.size() > 100) {
+            mSamplesQueue.pop();
+            cerr << "mSamplesQueue is full" << endl;
+        }
+        mSamplesQueue.push(apSample);
+        mMutexQueue.unlock();
+    }
 }
 
+// Play thread
 void CAudio::PlayThread()
 {
     int err;
@@ -91,6 +101,7 @@ void CAudio::PlayThread()
     snd_pcm_close(pcm_handle);
 }
 
+// Start record thread
 void CAudio::Record()
 {
     if (!mbRecord) {
@@ -101,6 +112,7 @@ void CAudio::Record()
     }
 }
 
+// Record thread
 void CAudio::RecordThread()
 {
     int err;
@@ -186,6 +198,7 @@ void CAudio::RecordThread()
             cerr << "read from audio interface failed " << snd_strerror (err) << ")" << endl;
             break;
         }
+        HttpServer.SendMessage(Sample.buf, sizeof(Sample.buf));
         Udp.Send(Sample.buf, sizeof(Sample.buf));
     }
 
@@ -193,6 +206,7 @@ void CAudio::RecordThread()
     cout << "audio interface closed" << endl;
 }
 
+// Stop all audio threads
 void CAudio::Stop()
 {
     mbPlay = false;
