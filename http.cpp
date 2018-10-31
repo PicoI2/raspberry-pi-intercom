@@ -14,6 +14,8 @@ ExtensionToMime ExtensionsArray[] = {
     {"css", CSS},
     {"html", HTML},
     {"js", JS},
+    {"mp3", MP3},
+    {"wav", WAV},
 };
 
 string GetMimeType(string aUri)

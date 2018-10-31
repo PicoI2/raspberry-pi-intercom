@@ -7,11 +7,13 @@
 
 using namespace std;
 
+
 #define RATE 44100  // Hz
-#define DURATION 10 // ms
-#define FRAME_BY_SAMPLE (RATE * DURATION / 1000)
 #define FRAME_SIZE 2 // 16 bits
-#define SAMPLE_SIZE (FRAME_SIZE * FRAME_BY_SAMPLE)    // 882 (16bits at 44.1khz mono)
+#define SAMPLE_SIZE 1024
+#define FRAME_BY_SAMPLE (SAMPLE_SIZE / FRAME_SIZE)
+
+
 
 struct CAudioSample {
     typedef shared_ptr<CAudioSample> Ptr;
@@ -25,6 +27,7 @@ public :
     void Push (CAudioSample::Ptr apSample);
     void Record ();
     void Stop ();
+    
 protected :
     void PlayThread ();
     thread mPlayThread;
