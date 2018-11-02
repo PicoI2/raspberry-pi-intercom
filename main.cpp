@@ -206,11 +206,13 @@ string CMain::OnRequest (const WSRequest& aHttpRequest) {
             else if ("/startlisten" == aHttpRequest.get_uri()) {
                 Ring.Stop();
                 Udp.Send("record");
+                Audio.Play();
                 Result = "OK";
             }
             else if ("/startspeaking" == aHttpRequest.get_uri()) {
                 Ring.Stop();
                 Udp.Send("record");
+                Audio.Play();
                 Audio.Record();
                 Result = "OK";
             }

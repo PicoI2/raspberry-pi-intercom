@@ -73,6 +73,8 @@ void CAudio::PlayThread()
         printf("ERROR: Can't set rate. %s\n", snd_strerror(err));
     }
 
+    cout << "snd_pcm_hw_params_set_rate_near to:" << rate << endl;
+
     /* Write parameters */
     if (err = snd_pcm_hw_params(pcm_handle, params) < 0)
         printf("ERROR: Can't set hardware parameters. %s\n", snd_strerror(err));{
@@ -80,10 +82,8 @@ void CAudio::PlayThread()
 
     CAudioSample::Ptr pSample;
     while (mbPlay) {
-        while (mSamplesQueue.empty()){
-            // cout << "waiting for samples" << endl;
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        }
+        while (mbPlay && mSamplesQueue.empty());
+        
         mMutexQueue.lock();
         pSample = mSamplesQueue.front();
         mSamplesQueue.pop();
@@ -95,6 +95,8 @@ void CAudio::PlayThread()
             printf("ERROR. Can't write to PCM device. %s\n", snd_strerror(err));
             break;
         }
+
+        while (mbPlay && mSamplesQueue.empty());
     }
 
     snd_pcm_drain(pcm_handle);
@@ -166,7 +168,7 @@ void CAudio::RecordThread()
 
     cout << "hw_params rate setted to:" << rate << endl;
 
-    if ((err = snd_pcm_hw_params_set_channels (capture_handle, hw_params, 1)) < 0) {
+    if ((err = snd_pcm_hw_params_set_channels (capture_handle, hw_params, 2)) < 0) {
         cerr << "cannot set channel count " << snd_strerror (err) << ")" << endl;
         return;
     }

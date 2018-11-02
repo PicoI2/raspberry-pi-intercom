@@ -1,4 +1,6 @@
 #pragma once
+#include "audio.h"
+
 #include <boost/asio.hpp>
 #include <boost/signals2.hpp>
 using namespace std;
@@ -17,7 +19,7 @@ public :
 
     boost::asio::io_service* mpIoService;
     udp::socket* mpSocket;
-    std::array<char, 1024> mBuffer;
+    std::array<char, 10*SAMPLE_SIZE> mBuffer;
     udp::endpoint mRemoteEndPoint;
     udp::endpoint mReceiveRemoteEndPoint;
     unsigned long mRemoteUdpPort;
