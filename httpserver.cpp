@@ -137,4 +137,7 @@ void CHttpServer::OnTimer (void)
 	// for (websocketpp::connection_hdl hdl : mClientList) {
 		// TODO Disconnect socket if no message have been received for more than 60 seconds, after having added life message from client to server
 	// }
+	
+	mpTimer->expires_from_now(*mpInterval);
+	mpTimer->async_wait([this](const boost::system::error_code&){OnTimer();});
 }

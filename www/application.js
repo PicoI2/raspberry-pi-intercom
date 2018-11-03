@@ -21,6 +21,20 @@ angular.module("ngApp", [])
         }
     );
 
+    // Read framebysample
+    me.frameBySample = 2048;
+    $http.get("framebysample").then(
+        function (response) {
+            if (response.data) {
+                me.framebysample = parseInt(response.data);
+                console.log("framebysample:", me.framebysample);
+            }
+        },
+        function (response) {
+            console.log("get framebysample (KO)", response);
+        }
+    );
+
     // Video src (motion) (IF SERVER)
     me.videoSrc = `${window.location.protocol}//${window.location.host.substr(0, window.location.host.lastIndexOf(':'))}:8081`;
     $http.get("videosrc").then(
@@ -64,6 +78,7 @@ angular.module("ngApp", [])
         // console.log(typeof msg.data);
         // console.log(msg.data);
         if ("string" == typeof msg.data) {
+            console.log(msg.data);
             if ("doorbell" == msg.data) {
                 me.ring();
             }
@@ -148,7 +163,7 @@ angular.module("ngApp", [])
 
             navigator.mediaDevices.getUserMedia({ audio: true }).then( function(stream) {
                 me.listening = true;
-                me.listenProcess = me.audioContext.createScriptProcessor(1024, 0, 1);
+                me.listenProcess = me.audioContext.createScriptProcessor(me.frameBySample, 0, 1);
                 me.listenProcess.connect(me.audioContext.destination);
                 me.listenProcess.onaudioprocess = function(e) {
                     // console.log("on read audio process");
@@ -178,7 +193,7 @@ angular.module("ngApp", [])
                 console.log("stream:", stream);
                 
                 me.source = me.audioContext.createMediaStreamSource(stream);
-                me.speakProcess = me.audioContext.createScriptProcessor(1024, 1, 0);
+                me.speakProcess = me.audioContext.createScriptProcessor(me.frameBySample, 1, 0);
                 me.source.connect(me.speakProcess);
                 // me.speakProcess.connect(me.audioContext.destination);
                 me.speakProcess.onaudioprocess = function(e) {

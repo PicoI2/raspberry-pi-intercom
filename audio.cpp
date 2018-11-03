@@ -81,6 +81,8 @@ void CAudio::PlayThread()
 
     CAudioSample::Ptr pSample;
 
+    cout << "Start playing" << endl;
+
     while (mbPlay) {
         while (mSamplesQueue.empty()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -100,6 +102,8 @@ void CAudio::PlayThread()
             break;
         }
     }
+
+    cout << "Stop playing" << endl;
 
     snd_pcm_drain(pcm_handle);
     snd_pcm_close(pcm_handle);
@@ -196,6 +200,8 @@ void CAudio::RecordThread()
     cout << "audio interface prepared" << endl;
     cout << " snd_pcm_format_width(format) " <<  snd_pcm_format_width(format) << "bits" << endl;
 
+    cout << "Start recording" << endl;
+
     while (mbRecord) {
         CAudioSample Sample;
         if ((err = snd_pcm_readi (capture_handle, Sample.buf, FRAME_BY_SAMPLE)) != FRAME_BY_SAMPLE) {
@@ -205,6 +211,8 @@ void CAudio::RecordThread()
         HttpServer.SendMessage(Sample.buf, sizeof(Sample.buf));
         Udp.Send(Sample.buf, sizeof(Sample.buf));
     }
+
+    cout << "Stop recording" << endl;
 
     snd_pcm_close (capture_handle);
     cout << "audio interface closed" << endl;

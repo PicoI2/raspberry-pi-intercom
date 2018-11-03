@@ -175,6 +175,9 @@ string CMain::OnRequest (const WSRequest& aHttpRequest) {
         if ("/mode" == aHttpRequest.get_uri()) {
             Result = Config.GetString("mode");
         }
+        else if ("/framebysample" == aHttpRequest.get_uri()) {
+            Result = to_string(FRAME_BY_SAMPLE);
+        }
         else if (!mbClientMode) {    // If server
             if ("/startlisten" == aHttpRequest.get_uri()) {
                 Ring.Stop();
