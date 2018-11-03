@@ -24,7 +24,7 @@ void CAudio::Play()
 void CAudio::Push (CAudioSample::Ptr apSample) {
     if (mbPlay) {
         mMutexQueue.lock();
-        // If more than 100 samples in queue (~2 seconds), delete the older one.
+        // If more than 100 samples in queue (~4.6 seconds), delete the older one.
         if (mSamplesQueue.size() > 100) {
             mSamplesQueue.pop();
             cerr << "mSamplesQueue is full" << endl;
@@ -77,26 +77,28 @@ void CAudio::PlayThread()
 
     /* Write parameters */
     if (err = snd_pcm_hw_params(pcm_handle, params) < 0)
-        printf("ERROR: Can't set hardware parameters. %s\n", snd_strerror(err));{
-    }
+        printf("ERROR: Can't set hardware parameters. %s\n", snd_strerror(err));
 
     CAudioSample::Ptr pSample;
+
     while (mbPlay) {
-        while (mbPlay && mSamplesQueue.empty());
-        
+        while (mSamplesQueue.empty()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+
         mMutexQueue.lock();
         pSample = mSamplesQueue.front();
         mSamplesQueue.pop();
         mMutexQueue.unlock();
         
         if (err = snd_pcm_writei(pcm_handle, pSample->buf, FRAME_BY_SAMPLE) == -EPIPE) {
+            cout << "XRUN " << endl;
+            std::this_thread::sleep_for(std::chrono::milliseconds(80));
             snd_pcm_prepare(pcm_handle);
         } else if (err < 0) {
             printf("ERROR. Can't write to PCM device. %s\n", snd_strerror(err));
             break;
         }
-
-        while (mbPlay && mSamplesQueue.empty());
     }
 
     snd_pcm_drain(pcm_handle);
@@ -168,7 +170,7 @@ void CAudio::RecordThread()
 
     cout << "hw_params rate setted to:" << rate << endl;
 
-    if ((err = snd_pcm_hw_params_set_channels (capture_handle, hw_params, 2)) < 0) {
+    if ((err = snd_pcm_hw_params_set_channels (capture_handle, hw_params, 1)) < 0) {
         cerr << "cannot set channel count " << snd_strerror (err) << ")" << endl;
         return;
     }

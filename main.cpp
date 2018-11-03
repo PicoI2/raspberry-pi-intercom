@@ -104,6 +104,7 @@ void CMain::OnInput (const int aGpio, const bool abValue) {
     if (!mbClientMode) {    // If server
         if (mInputRingBell == aGpio) {
             string Message = "doorbell";
+            Ring.Start();
             Udp.Send(Message);
             HttpServer.SendMessage(Message);
             PushSafer.Notification("Someone is at your door");

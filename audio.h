@@ -10,7 +10,7 @@ using namespace std;
 
 #define RATE 44100  // Hz
 #define FRAME_SIZE 2 // 16 bits
-#define SAMPLE_SIZE 1024
+#define SAMPLE_SIZE 4096
 #define FRAME_BY_SAMPLE (SAMPLE_SIZE / FRAME_SIZE)
 
 
