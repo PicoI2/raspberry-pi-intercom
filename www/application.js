@@ -68,7 +68,7 @@ angular.module("ngApp", [])
     };
     const onclose = function () {
         console.log('websocket onclose');
-        me.hangup();
+        me.hangup(false);
         // Try to reconnect in 5 seconds
         $timeout(function () {
             me.ws = connect();
@@ -154,9 +154,11 @@ angular.module("ngApp", [])
     };
     
     // Listen
-    me.listen = function () {
+    me.listen = function (bip) {
         console.log("Listen...");
-        me.bip();
+        if (bip) {
+            me.bip();
+        }
         me.get('/startlisten');
         if (!me.mbModeClient) {
             if (me.audioRing) me.audioRing.pause();
@@ -164,7 +166,7 @@ angular.module("ngApp", [])
             me.listenProcess = me.audioContext.createScriptProcessor(me.frameBySample, 0, 1);
             me.listenProcess.connect(me.audioContext.destination);
             me.listenProcess.onaudioprocess = function(e) {
-                // console.log("play...");
+                console.log("play...");
                 let sampleFloatArray = me.stack.pop();
                 if (sampleFloatArray) {
                     // console.log("pop OK");
@@ -172,16 +174,21 @@ angular.module("ngApp", [])
                         e.outputBuffer.getChannelData(0)[i] = sampleFloatArray[i];
                     }
                 }
+                else {
+                    console.log("nothing to read");
+                }
             };
         }
     };
 
     // Speak
-    me.speak = function () {
+    me.speak = function (bip) {
         console.log("Speak...");
-        me.bip();
+        if (bip) {
+            me.bip();
+        }
         me.get('/startspeaking');
-        me.listen();
+        me.listen(false);
         if (!me.mbModeClient) {
             if (me.audioRing) me.audioRing.pause();
 
@@ -207,15 +214,19 @@ angular.module("ngApp", [])
     };
 
     // Open door
-    me.dooropen = function () {
-        me.bip();
+    me.dooropen = function (bip) {
+        if (bip) {
+            me.bip();
+        }
         if (me.audioRing) me.audioRing.pause();
         me.get('/dooropen');
     }
 
     // Hangup
-    me.hangup = function () {
-        me.bip();
+    me.hangup = function (bip) {
+        if (bip) {
+            me.bip();
+        }
         if (me.audioRing) me.audioRing.pause();
         console.log("Hangup...");
         me.get('/hangup');
