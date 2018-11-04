@@ -26,8 +26,8 @@ angular.module("ngApp", [])
     $http.get("framebysample").then(
         function (response) {
             if (response.data) {
-                me.framebysample = parseInt(response.data);
-                console.log("framebysample:", me.framebysample);
+                me.frameBySample = parseInt(response.data);
+                console.log("me.frameBySample:", me.frameBySample);
             }
         },
         function (response) {
@@ -160,24 +160,19 @@ angular.module("ngApp", [])
         me.get('/startlisten');
         if (!me.mbModeClient) {
             if (me.audioRing) me.audioRing.pause();
-
-            navigator.mediaDevices.getUserMedia({ audio: true }).then( function(stream) {
-                me.listening = true;
-                me.listenProcess = me.audioContext.createScriptProcessor(me.frameBySample, 0, 1);
-                me.listenProcess.connect(me.audioContext.destination);
-                me.listenProcess.onaudioprocess = function(e) {
-                    // console.log("on read audio process");
-                    let sampleFloatArray = me.stack.pop();
-                    if (sampleFloatArray) {
-                        // console.log("pop OK");
-                        for (let i=0; i<sampleFloatArray.length; ++i) {
-                            e.outputBuffer.getChannelData(0)[i] = sampleFloatArray[i];
-                        }
+            me.listening = true;
+            me.listenProcess = me.audioContext.createScriptProcessor(me.frameBySample, 0, 1);
+            me.listenProcess.connect(me.audioContext.destination);
+            me.listenProcess.onaudioprocess = function(e) {
+                // console.log("play...");
+                let sampleFloatArray = me.stack.pop();
+                if (sampleFloatArray) {
+                    // console.log("pop OK");
+                    for (let i=0; i<sampleFloatArray.length; ++i) {
+                        e.outputBuffer.getChannelData(0)[i] = sampleFloatArray[i];
                     }
-                };
-            }).catch(function(err) {
-                console.log("getUserMedia error: ", err);
-            });
+                }
+            };
         }
     };
 
@@ -186,6 +181,7 @@ angular.module("ngApp", [])
         console.log("Speak...");
         me.bip();
         me.get('/startspeaking');
+        me.listen();
         if (!me.mbModeClient) {
             if (me.audioRing) me.audioRing.pause();
 
@@ -197,6 +193,7 @@ angular.module("ngApp", [])
                 me.source.connect(me.speakProcess);
                 // me.speakProcess.connect(me.audioContext.destination);
                 me.speakProcess.onaudioprocess = function(e) {
+                    console.log("record...");
                     let sampleArray = new Int16Array(e.inputBuffer.getChannelData(0).length);
                     for (let i=0; i<e.inputBuffer.getChannelData(0).length; ++i) {
                         sampleArray[i] = e.inputBuffer.getChannelData(0)[i] * 0x7FFF;
