@@ -12,6 +12,8 @@ CHttpServer HttpServer;
 
 const static string ALIVE  = "alive";
 
+context_ptr OnTlsInit(websocketpp::connection_hdl hdl);
+
 // Constructor
 bool CHttpServer::Start(boost::asio::io_service* apIoService, int aPort)
 {
@@ -25,6 +27,7 @@ bool CHttpServer::Start(boost::asio::io_service* apIoService, int aPort)
 	mServer.set_close_handler([this] (auto hdl) {this->OnClose(hdl);});
 	mServer.set_message_handler([this] (auto hdl, auto message) {this->OnMessage(hdl, message);});
 	mServer.set_http_handler([this] (auto hdl) {this->OnHttp(hdl);});
+	mServer.set_tls_init_handler(bind(&OnTlsInit,::_1));
 	mServer.listen(aPort);
 	mServer.start_accept();
 
@@ -137,7 +140,58 @@ void CHttpServer::OnTimer (void)
 	// for (websocketpp::connection_hdl hdl : mClientList) {
 		// TODO Disconnect socket if no message have been received for more than 60 seconds, after having added life message from client to server
 	// }
-	
+
 	mpTimer->expires_from_now(*mpInterval);
 	mpTimer->async_wait([this](const boost::system::error_code&){OnTimer();});
+}
+
+std::string get_password() {
+    return "rpi-intercom";
+}
+
+context_ptr OnTlsInit (websocketpp::connection_hdl hdl) {
+
+	tls_mode mode = MOZILLA_INTERMEDIATE;
+
+	namespace asio = websocketpp::lib::asio;
+
+    std::cout << "on_tls_init called with hdl: " << hdl.lock().get() << std::endl;
+    std::cout << "using TLS mode: " << (mode == MOZILLA_MODERN ? "Mozilla Modern" : "Mozilla Intermediate") << std::endl;
+
+    context_ptr ctx = websocketpp::lib::make_shared<asio::ssl::context>(asio::ssl::context::sslv23);
+
+    try {
+        if (mode == MOZILLA_MODERN) {
+            // Modern disables TLSv1
+            ctx->set_options(asio::ssl::context::default_workarounds |
+                             asio::ssl::context::no_sslv2 |
+                             asio::ssl::context::no_sslv3 |
+                             asio::ssl::context::no_tlsv1 |
+                             asio::ssl::context::single_dh_use);
+        } else {
+            ctx->set_options(asio::ssl::context::default_workarounds |
+                             asio::ssl::context::no_sslv2 |
+                             asio::ssl::context::no_sslv3 |
+                             asio::ssl::context::single_dh_use);
+        }
+        ctx->set_password_callback(bind(&get_password));
+        ctx->use_certificate_chain_file("ssl/cert.pem");
+        ctx->use_private_key_file("ssl/key.pem", asio::ssl::context::pem);
+        ctx->use_tmp_dh_file("ssl/dh.pem");
+        
+        std::string ciphers;
+        
+        if (mode == MOZILLA_MODERN) {
+            ciphers = "ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-DSS-AES128-GCM-SHA256:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA256:DHE-RSA-AES256-SHA256:DHE-DSS-AES256-SHA:DHE-RSA-AES256-SHA:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!3DES:!MD5:!PSK";
+        } else {
+            ciphers = "ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-DSS-AES128-GCM-SHA256:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA256:DHE-RSA-AES256-SHA256:DHE-DSS-AES256-SHA:DHE-RSA-AES256-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:AES:CAMELLIA:DES-CBC3-SHA:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!aECDH:!EDH-DSS-DES-CBC3-SHA:!EDH-RSA-DES-CBC3-SHA:!KRB5-DES-CBC3-SHA";
+        }
+        
+        if (SSL_CTX_set_cipher_list(ctx->native_handle() , ciphers.c_str()) != 1) {
+            std::cout << "Error setting cipher list" << std::endl;
+        }
+    } catch (std::exception& e) {
+        std::cout << "Exception: " << e.what() << std::endl;
+    }
+	return ctx;
 }

@@ -41,6 +41,14 @@ Then run
 ./rpi-intercom config-server.cfg
 ```
 
+HTTPS
+---------
+Create your own SSL/TLS keys :<br>
+```Shell
+openssl req -x509 -newkey rsa:4096 -keyout ssl/key.pem -out ssl/cert.pem -days 365
+openssl dhparam -out ssl/dh.pem 2048
+```
+
 Hardware
 ---------
 As an example, this is a list of what I use :

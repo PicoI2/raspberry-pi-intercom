@@ -5,15 +5,22 @@
 #include <boost/asio.hpp>
 #include <boost/signals2.hpp>
 
-#include <websocketpp/config/asio_no_tls.hpp>
+#include <websocketpp/config/asio.hpp>
 #include <websocketpp/server.hpp>
-#include <websocketpp/config/debug_asio_no_tls.hpp>
 
 using boost::asio::ip::tcp;
 
-typedef websocketpp::server<websocketpp::config::asio> WSServer;
+typedef websocketpp::lib::shared_ptr<websocketpp::lib::asio::ssl::context> context_ptr;
+typedef websocketpp::server<websocketpp::config::asio_tls> WSServer;
 typedef WSServer::connection_type::request_type WSRequest;
 typedef set<websocketpp::connection_hdl,owner_less<websocketpp::connection_hdl> > ConnectionList;
+
+// See https://wiki.mozilla.org/Security/Server_Side_TLS for more details about
+// the TLS modes. The code below demonstrates how to implement both the modern
+enum tls_mode {
+    MOZILLA_INTERMEDIATE = 1,
+    MOZILLA_MODERN = 2
+};
 
 class CHttpServer
 {

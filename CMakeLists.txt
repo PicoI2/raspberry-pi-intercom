@@ -16,4 +16,4 @@ find_package(Boost ${BOOST_MIN_VERSION} REQUIRED COMPONENTS system)
 file (GLOB SOURCE_FILES *.cpp)
 
 add_executable(rpi-intercom ${SOURCE_FILES})
-target_link_libraries(rpi-intercom pthread boost_system asound)
+target_link_libraries(rpi-intercom pthread boost_system asound ssl crypto)
