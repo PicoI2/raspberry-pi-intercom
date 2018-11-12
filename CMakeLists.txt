@@ -13,7 +13,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -no-pie")
 set(BOOST_MIN_VERSION "1.39.0")
 find_package(Boost ${BOOST_MIN_VERSION} REQUIRED COMPONENTS system)
 
-file (GLOB SOURCE_FILES *.cpp)
+file (GLOB SOURCE_FILES src/*.cpp)
 
 add_executable(rpi-intercom ${SOURCE_FILES})
 target_link_libraries(rpi-intercom pthread boost_system asound)
