@@ -43,11 +43,11 @@ Then run
 
 HTTPS
 ---------
-Create your own SSL/TLS keys :<br>
+Create your own SSL/TLS self-signed keys :<br>
 ```Shell
-openssl req -x509 -newkey rsa:4096 -keyout ssl/key.pem -out ssl/cert.pem -days 365
-openssl dhparam -out ssl/dh.pem 2048
+openssl req -x509 -newkey rsa:4096 -keyout ssl/privkey1.pem -out ssl/cert1.pem -days 365
 ```
+But I recommand using a true certificate. You can buy domain name for 3,59 €/year on <a href="https://www.ovh.com/fr/domaines/dotovh.xml">OVH</a>.
 
 Hardware
 ---------

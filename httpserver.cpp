@@ -88,6 +88,7 @@ void CHttpServer::SendMessage (char* aMessage, size_t aSize) {
 // On HTTP request
 void CHttpServer::OnHttp(websocketpp::connection_hdl hdl)
 {
+	cout << "OnHttp" << endl;
 	WSServer::connection_ptr ConnectionPtr = mServer.get_con_from_hdl(hdl);
 
 	// Read parsed request
@@ -145,10 +146,6 @@ void CHttpServer::OnTimer (void)
 	mpTimer->async_wait([this](const boost::system::error_code&){OnTimer();});
 }
 
-std::string get_password() {
-    return "rpi-intercom";
-}
-
 context_ptr OnTlsInit (websocketpp::connection_hdl hdl) {
 
 	tls_mode mode = MOZILLA_INTERMEDIATE;
@@ -174,10 +171,8 @@ context_ptr OnTlsInit (websocketpp::connection_hdl hdl) {
                              asio::ssl::context::no_sslv3 |
                              asio::ssl::context::single_dh_use);
         }
-        ctx->set_password_callback(bind(&get_password));
-        ctx->use_certificate_chain_file("ssl/cert.pem");
-        ctx->use_private_key_file("ssl/key.pem", asio::ssl::context::pem);
-        ctx->use_tmp_dh_file("ssl/dh.pem");
+        ctx->use_certificate_chain_file("ssl/cert1.pem");
+        ctx->use_private_key_file("ssl/privkey1.pem", asio::ssl::context::pem);
         
         std::string ciphers;
         

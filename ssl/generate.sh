@@ -1,3 +1,2 @@
 #!/bin/bash
-openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365
-openssl dhparam -out dh.pem 2048
+openssl req -x509 -newkey rsa:4096 -keyout privkey1.pem -out cert1.pem -days 365
