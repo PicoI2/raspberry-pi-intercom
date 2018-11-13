@@ -4,14 +4,18 @@
 #include <iostream>
 #include <boost/asio.hpp>
 #include <boost/signals2.hpp>
-
-#include <websocketpp/config/asio_no_tls.hpp>
 #include <websocketpp/server.hpp>
-#include <websocketpp/config/debug_asio_no_tls.hpp>
-
 using boost::asio::ip::tcp;
 
+#ifdef USE_HTTPS
+#include <websocketpp/config/asio.hpp>
+typedef websocketpp::server<websocketpp::config::asio_tls> WSServer;
+typedef websocketpp::lib::shared_ptr<websocketpp::lib::asio::ssl::context> context_ptr;
+#else
+#include <websocketpp/config/asio_no_tls.hpp>
 typedef websocketpp::server<websocketpp::config::asio> WSServer;
+#endif
+
 typedef WSServer::connection_type::request_type WSRequest;
 typedef set<websocketpp::connection_hdl,owner_less<websocketpp::connection_hdl> > ConnectionList;
 
@@ -30,6 +34,9 @@ private:
 	void OnClose (websocketpp::connection_hdl hdl);
 	void OnHttp(websocketpp::connection_hdl hdl);
 	void OnTimer (void);
+	#ifdef USE_HTTPS
+	context_ptr OnTlsInit (websocketpp::connection_hdl hdl);
+	#endif
 
 // Members values
 	WSServer mServer;

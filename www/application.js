@@ -36,12 +36,12 @@ angular.module("ngApp", [])
     );
 
     // Video src (motion) (IF SERVER)
-    me.videoSrc = `${window.location.protocol}//${window.location.host.substr(0, window.location.host.lastIndexOf(':'))}:8081`;
+    me.videoSrc = `http://${window.location.host.substr(0, window.location.host.lastIndexOf(':'))}:8081`;
     $http.get("videosrc").then(
         function (response) {
             if (response.data) {
                 // Video src (motion) (IF CLIENT)
-                me.videoSrc = `${window.location.protocol}//${response.data}:8081`;
+                me.videoSrc = `http://${response.data}:8081`;
             }
         },
         function (response) {
