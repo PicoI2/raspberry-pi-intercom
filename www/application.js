@@ -1,15 +1,26 @@
 angular.module("ngApp", [])
-.controller("intercomController", function($http, $timeout) {
+.controller("intercomController", function ($http, $timeout) {
     let me = this;
     me.stack = [];
-    me.audioContext = new AudioContext();
+    me.videoSrc = `http://${window.location.host.substr(0, window.location.host.lastIndexOf(':'))}:8081`;
 
-    // Read mode
-    me.mbModeClient = false;
-    $http.get("mode").then(
+    // Read configuration and then start websocket if needed
+    $http.get("/config").then(
         function (response) {
+            const config = response.data;
+            console.log(config);
             if (response.data) {
-                me.mbModeClient = ("client" == response.data);
+                me.mbModeClient = ("client" == config.mode);
+                me.frameBySample = config.frameBySample;
+                me.rate = config.rate;
+                me.videoSrc = `http://${config.videoSrc}:8081`;
+
+                // Create audio context with sample rate
+                me.audioContext = new AudioContext({
+                    sampleRate: me.rate,
+                });
+                console.log("me.audioContext:", me.audioContext);
+
                 if (!me.mbModeClient) {
                     // Start weboscket
                     me.ws = connect();
@@ -17,35 +28,7 @@ angular.module("ngApp", [])
             }
         },
         function (response) {
-            console.log("get mode (KO)", response);
-        }
-    );
-
-    // Read framebysample
-    me.frameBySample = 2048;
-    $http.get("framebysample").then(
-        function (response) {
-            if (response.data) {
-                me.frameBySample = parseInt(response.data);
-                console.log("me.frameBySample:", me.frameBySample);
-            }
-        },
-        function (response) {
-            console.log("get framebysample (KO)", response);
-        }
-    );
-
-    // Video src (motion) (IF SERVER)
-    me.videoSrc = `http://${window.location.host.substr(0, window.location.host.lastIndexOf(':'))}:8081`;
-    $http.get("videosrc").then(
-        function (response) {
-            if (response.data) {
-                // Video src (motion) (IF CLIENT)
-                me.videoSrc = `http://${response.data}:8081`;
-            }
-        },
-        function (response) {
-            console.log("get videosrc (KO)", response);
+            me.message = "Failed to read configuration";
         }
     );
 
@@ -64,10 +47,12 @@ angular.module("ngApp", [])
     // Websocket
     const onopen = function () {
         console.log('websocket onopen');
+        me.message = "Connected to server";
         me.wsConnected = true;
     };
     const onclose = function () {
         console.log('websocket onclose');
+        me.message = "Disconnected from server";
         me.hangup(false);
         // Try to reconnect in 5 seconds
         $timeout(function () {
@@ -166,7 +151,7 @@ angular.module("ngApp", [])
             me.listenProcess = me.audioContext.createScriptProcessor(me.frameBySample, 0, 1);
             me.listenProcess.connect(me.audioContext.destination);
             me.listenProcess.onaudioprocess = function(e) {
-                console.log("play...");
+                // console.log("play...");
                 let sampleFloatArray = me.stack.pop();
                 if (sampleFloatArray) {
                     // console.log("pop OK");
@@ -192,15 +177,22 @@ angular.module("ngApp", [])
         if (!me.mbModeClient) {
             if (me.audioRing) me.audioRing.pause();
 
-            navigator.mediaDevices.getUserMedia({ audio: true }).then( function(stream) {
-                console.log("stream:", stream);
-                
+            navigator.mediaDevices.getUserMedia({ audio: {sampleRate: me.rate, channelCount: 1, echoCancellation: true} }).then( function(stream) {
+                // console.log("stream:", stream);
+                // console.log("stream.getAudioTracks()[0]:", stream.getAudioTracks()[0]);
+                // console.log("stream.getAudioTracks()[0].getConstraints():", stream.getAudioTracks()[0].getConstraints());
+                // console.log("stream.getAudioTracks()[0].getSettings():", stream.getAudioTracks()[0].getSettings());
                 me.source = me.audioContext.createMediaStreamSource(stream);
                 me.speakProcess = me.audioContext.createScriptProcessor(me.frameBySample, 1, 0);
                 me.source.connect(me.speakProcess);
-                // me.speakProcess.connect(me.audioContext.destination);
                 me.speakProcess.onaudioprocess = function(e) {
-                    console.log("record...");
+                    // console.log("record...");
+                    if (e.inputBuffer.sampleRate != me.rate) {
+                        me.message = `Sample rate error ${e.inputBuffer.sampleRate} != ${me.rate}`;
+                        // TODO Convert to expected rate with OfflineAudioContext
+                        // or skip frames when copying
+                    }
+
                     let sampleArray = new Int16Array(e.inputBuffer.getChannelData(0).length);
                     for (let i=0; i<e.inputBuffer.getChannelData(0).length; ++i) {
                         sampleArray[i] = e.inputBuffer.getChannelData(0)[i] * 0x7FFF;
@@ -220,7 +212,7 @@ angular.module("ngApp", [])
         }
         if (me.audioRing) me.audioRing.pause();
         me.get('/dooropen');
-    }
+    };
 
     // Hangup
     me.hangup = function (bip) {
@@ -236,5 +228,5 @@ angular.module("ngApp", [])
         if (me.listenProcess) me.listenProcess.disconnect(me.audioContext.destination);
         me.listening = false;
         me.stack = [];
-    }
+    };
 });

@@ -103,16 +103,16 @@ Content-Type: multipart/form-data; boundary=------------------------3173acd4f807
             boost::asio::write(Socket, boost::asio::buffer(Request));
             
             // TODO Do something else
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            this_thread::sleep_for(chrono::milliseconds(1000));
 
-            std::array<char, 4096> Buffer;
+            array<char, 4096> Buffer;
             size_t Read = Socket.read_some(boost::asio::buffer(Buffer));
-            std::string Reply(Buffer.begin(), Buffer.begin() + Read);
+            string Reply(Buffer.begin(), Buffer.begin() + Read);
             cout << Reply << endl;;
         }
         Socket.close();
     }
-    catch (std::exception& e) {
+    catch (exception& e) {
         cerr << "Cannot access " << Query.host_name() << endl;
     }
 }

@@ -13,8 +13,12 @@ struct ExtensionToMime
 ExtensionToMime ExtensionsArray[] = {
     {"css", CSS},
     {"html", HTML},
+    {"ico", ICO},
+    {"jpeg", JPEG},
+    {"jpg", JPEG},
     {"js", JS},
     {"mp3", MP3},
+    {"pbg", PNG},
     {"wav", WAV},
 };
 

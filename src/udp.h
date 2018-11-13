@@ -11,15 +11,15 @@ public :
     bool Start (boost::asio::io_service* apIoService);
     void Stop ();
     void StartListening (void);
-    void ReceiveFrom (const boost::system::error_code& error, std::size_t bytes_transferred);
-    void Send (std::string aMessage);
+    void ReceiveFrom (const boost::system::error_code& error, size_t bytes_transferred);
+    void Send (string aMessage);
     void Send (char* aPacket, size_t aSize);
 
-    boost::signals2::signal <void (const std::string Message, const udp::endpoint From)> MessageSignal;
+    boost::signals2::signal <void (const string Message, const udp::endpoint From)> MessageSignal;
 
     boost::asio::io_service* mpIoService;
     udp::socket* mpSocket;
-    std::array<char, 10*SAMPLE_SIZE> mBuffer;
+    array<char, 10*SAMPLE_SIZE> mBuffer;
     udp::endpoint mRemoteEndPoint;
     udp::endpoint mReceiveRemoteEndPoint;
     unsigned long mRemoteUdpPort;

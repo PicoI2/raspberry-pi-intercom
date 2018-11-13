@@ -35,7 +35,7 @@ bool CIO::AddInput (int aGpio)
         ExportFile << aGpio;
         ExportFile.close();
         // Must wait after export eiher /sys/class/gpio/gpioXX does not have right permission
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        this_thread::sleep_for(chrono::milliseconds(100));
 
         string EdgeFileName = string("/sys/class/gpio/gpio") + to_string(aGpio) + "/edge";
         ofstream EdgeFile(EdgeFileName);
@@ -136,7 +136,7 @@ bool CIO::AddOutput (int aGpio, bool abValue)
         ExportFile.close();
 
         // Must wait after export eiher /sys/class/gpio/gpioXX does not have right permission
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        this_thread::sleep_for(chrono::milliseconds(200));
 
         string DirectionFileName = string("/sys/class/gpio/gpio") + to_string(aGpio) + "/direction";
         ofstream DirectionFile(DirectionFileName);

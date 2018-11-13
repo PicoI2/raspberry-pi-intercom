@@ -15,9 +15,12 @@ namespace http {
 		const static string TRACE = "TRACE";
 	}
 	namespace mime {
+		const static string JS   = "application/javascript";
 		const static string MP3  = "audio/mpeg";
 		const static string WAV  = "audio/wav";
-		const static string JS   = "application/javascript";
+		const static string JPEG = "image/jpeg";
+		const static string PNG = " image/png";
+		const static string ICO  = "image/x-icon";
 		const static string CSS  = "text/css";
 		const static string HTML = "text/html";
 

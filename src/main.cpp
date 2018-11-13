@@ -1,5 +1,6 @@
 #include <iostream>
 #include <thread>
+#include <jsoncpp/json/json.h>
 
 #include "udp.h"
 #include "http.h"
@@ -41,7 +42,7 @@ void CMain::Start ()
 
     // Start UDP
     Udp.Start(&mIoService);
-    Udp.MessageSignal.connect([=](const std::string Message, const udp::endpoint From){
+    Udp.MessageSignal.connect([=](const string Message, const udp::endpoint From){
         OnMessage(Message);
     });
 
@@ -172,11 +173,14 @@ string CMain::OnRequest (const WSRequest& aHttpRequest) {
     string Result;
     
     if (aHttpRequest.get_method() == http::method::GET) {
-        if ("/mode" == aHttpRequest.get_uri()) {
-            Result = Config.GetString("mode");
-        }
-        else if ("/framebysample" == aHttpRequest.get_uri()) {
-            Result = to_string(FRAME_BY_SAMPLE);
+        if ("/config" == aHttpRequest.get_uri()) {
+            // Return config in json
+            Json::Value JsonConfig;
+            JsonConfig["mode"] = Config.GetString("mode");
+            JsonConfig["frameBySample"] = FRAME_BY_SAMPLE;
+            JsonConfig["rate"] = RATE;
+            JsonConfig["videoSrc"] = mbClientMode ? Config.GetString("server-ip") : "localhost";
+            Result = JsonConfig.toStyledString();
         }
         else if (!mbClientMode) {    // If server
             if ("/startlisten" == aHttpRequest.get_uri()) {
@@ -230,11 +234,6 @@ string CMain::OnRequest (const WSRequest& aHttpRequest) {
                 Ring.Stop();
                 Audio.Stop();
                 Result = "OK";
-            }
-            else if ("/videosrc" == aHttpRequest.get_uri()) {
-                if (mbClientMode) {
-                    Result = Config.GetString("server-ip");
-                }
             }
         }
     }

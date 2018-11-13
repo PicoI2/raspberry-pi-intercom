@@ -13,7 +13,7 @@ void CConfig::SetParameter(string aParam, string aValue)
     mMap[aParam] = aValue;
 }
 
-bool CConfig::ReadConfigFile (std::string aFileName)
+bool CConfig::ReadConfigFile (string aFileName)
 {
     bool bRes = false;
     ifstream ConfigFile (aFileName);
@@ -38,7 +38,7 @@ unsigned long CConfig::GetULong(string aParam, bool abMandatory)
         try {
             return stoul(it->second);
         }
-        catch (const std::exception& e) {
+        catch (const exception& e) {
             cerr << aParam << " '" << it->second << "' " << "not a number" << endl;    
             exit(0);
         }

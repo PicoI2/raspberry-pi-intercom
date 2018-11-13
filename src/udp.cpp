@@ -43,7 +43,7 @@ void CUdp::StartListening (void)
         boost::asio::placeholders::bytes_transferred));
 }
 
-void CUdp::ReceiveFrom (const boost::system::error_code& error, std::size_t bytes_transferred)
+void CUdp::ReceiveFrom (const boost::system::error_code& error, size_t bytes_transferred)
 {
     if (SAMPLE_SIZE==bytes_transferred) {
         CAudioSample::Ptr pSample (new CAudioSample());
@@ -51,14 +51,14 @@ void CUdp::ReceiveFrom (const boost::system::error_code& error, std::size_t byte
         Audio.Push(pSample);
     }
     else {
-        std::string Message(mBuffer.begin(), mBuffer.begin()+bytes_transferred);
+        string Message(mBuffer.begin(), mBuffer.begin()+bytes_transferred);
         cout << "Receive : " << Message << " from : " << mReceiveRemoteEndPoint << endl;
         MessageSignal(Message, mReceiveRemoteEndPoint);
     }
     StartListening();
 }
 
-void CUdp::Send (std::string aMessage)
+void CUdp::Send (string aMessage)
 {
     mpSocket->send_to(boost::asio::buffer(aMessage), mRemoteEndPoint);
 }

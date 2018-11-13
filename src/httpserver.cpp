@@ -42,6 +42,7 @@ bool CHttpServer::Start(boost::asio::io_service* apIoService, int aPort)
 // Stop the seever and close all weboscket
 void CHttpServer::Stop()
 {
+	cout << "Stopping HTTP server..." << endl;
 	mServer.stop_listening();
 	for (auto hdl : mClientList) {
 		mServer.close(hdl, websocketpp::close::status::going_away, "Server shuting down");
