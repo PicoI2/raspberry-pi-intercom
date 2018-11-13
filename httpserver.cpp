@@ -12,28 +12,29 @@ CHttpServer HttpServer;
 
 const static string ALIVE  = "alive";
 
-context_ptr OnTlsInit(websocketpp::connection_hdl hdl);
-
-// Constructor
 bool CHttpServer::Start(boost::asio::io_service* apIoService, int aPort)
 {
 	mpIoService = apIoService;
 
-	//mServer.set_access_channels(websocketpp::log::alevel::all);
-    mServer.clear_access_channels(websocketpp::log::alevel::all);
-	mServer.init_asio(mpIoService);
-	mServer.set_reuse_addr(true);
-	mServer.set_open_handler([this] (auto hdl) {this->OnOpen(hdl);});
-	mServer.set_close_handler([this] (auto hdl) {this->OnClose(hdl);});
-	mServer.set_message_handler([this] (auto hdl, auto message) {this->OnMessage(hdl, message);});
-	mServer.set_http_handler([this] (auto hdl) {this->OnHttp(hdl);});
-	mServer.set_tls_init_handler(bind(&OnTlsInit,::_1));
-	mServer.listen(aPort);
-	mServer.start_accept();
+	if (aPort) {
+		//mServer.set_access_channels(websocketpp::log::alevel::all);
+		mServer.clear_access_channels(websocketpp::log::alevel::all);
+		mServer.init_asio(mpIoService);
+		mServer.set_reuse_addr(true);
+		mServer.set_open_handler([this] (auto hdl) {this->OnOpen(hdl);});
+		mServer.set_close_handler([this] (auto hdl) {this->OnClose(hdl);});
+		mServer.set_message_handler([this] (auto hdl, auto message) {this->OnMessage(hdl, message);});
+		mServer.set_http_handler([this] (auto hdl) {this->OnHttp(hdl);});
+		#ifdef USE_HTTPS
+		mServer.set_tls_init_handler([this] (auto hdl) {return this->OnTlsInit(hdl);});
+		#endif
+		mServer.listen(aPort);
+		mServer.start_accept();
 
-	mpInterval = new boost::posix_time::millisec(30000); // 30 seconds
-    mpTimer = new boost::asio::deadline_timer(*mpIoService, *mpInterval);
-    mpTimer->async_wait([this](const boost::system::error_code&){OnTimer();});
+		mpInterval = new boost::posix_time::millisec(30000); // 30 seconds
+		mpTimer = new boost::asio::deadline_timer(*mpIoService, *mpInterval);
+		mpTimer->async_wait([this](const boost::system::error_code&){OnTimer();});
+	}
 
 	return true;
 }
@@ -72,7 +73,7 @@ void CHttpServer::OnMessage(websocketpp::connection_hdl hdl, WSServer::message_p
 }
 
 // Broadcast text message to all clients
-void CHttpServer::SendMessage (std::string aMessage) {
+void CHttpServer::SendMessage (string aMessage) {
 	for (auto hdl : mClientList) {
 		mServer.send(hdl, aMessage, websocketpp::frame::opcode::text);
 	}
@@ -107,7 +108,7 @@ void CHttpServer::OnHttp(websocketpp::connection_hdl hdl)
 	bool bOk = false;
 	// Return requested file
 	if (Method == http::method::GET && !MimeType.empty() && string::npos == Uri.find("..")) {
-        ifstream RequestedFile("./www/" + Uri, std::ios::in | std::ios::binary);
+        ifstream RequestedFile("./www/" + Uri, ios::in | ios::binary);
         if (RequestedFile.is_open()) {
             char buffer [1024];
             while (RequestedFile.read(buffer, sizeof(buffer)).gcount() > 0) {
@@ -135,6 +136,7 @@ void CHttpServer::OnHttp(websocketpp::connection_hdl hdl)
 	mServer.start_accept();
 }
 
+// Every 30 seconds
 void CHttpServer::OnTimer (void)
 {
 	SendMessage(ALIVE);
@@ -146,47 +148,30 @@ void CHttpServer::OnTimer (void)
 	mpTimer->async_wait([this](const boost::system::error_code&){OnTimer();});
 }
 
-context_ptr OnTlsInit (websocketpp::connection_hdl hdl) {
-
-	tls_mode mode = MOZILLA_INTERMEDIATE;
-
+// On TLS init
+#ifdef USE_HTTPS
+context_ptr CHttpServer::OnTlsInit (websocketpp::connection_hdl hdl) {
 	namespace asio = websocketpp::lib::asio;
 
-    std::cout << "on_tls_init called with hdl: " << hdl.lock().get() << std::endl;
-    std::cout << "using TLS mode: " << (mode == MOZILLA_MODERN ? "Mozilla Modern" : "Mozilla Intermediate") << std::endl;
+    cout << "on_tls_init called with hdl: " << hdl.lock().get() << endl;
 
     context_ptr ctx = websocketpp::lib::make_shared<asio::ssl::context>(asio::ssl::context::sslv23);
 
     try {
-        if (mode == MOZILLA_MODERN) {
-            // Modern disables TLSv1
-            ctx->set_options(asio::ssl::context::default_workarounds |
-                             asio::ssl::context::no_sslv2 |
-                             asio::ssl::context::no_sslv3 |
-                             asio::ssl::context::no_tlsv1 |
-                             asio::ssl::context::single_dh_use);
-        } else {
-            ctx->set_options(asio::ssl::context::default_workarounds |
-                             asio::ssl::context::no_sslv2 |
-                             asio::ssl::context::no_sslv3 |
-                             asio::ssl::context::single_dh_use);
-        }
+		ctx->set_options(asio::ssl::context::default_workarounds |
+							asio::ssl::context::no_sslv2 |
+							asio::ssl::context::no_sslv3 |
+                            asio::ssl::context::single_dh_use);
         ctx->use_certificate_chain_file("ssl/cert1.pem");
         ctx->use_private_key_file("ssl/privkey1.pem", asio::ssl::context::pem);
         
-        std::string ciphers;
-        
-        if (mode == MOZILLA_MODERN) {
-            ciphers = "ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-DSS-AES128-GCM-SHA256:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA256:DHE-RSA-AES256-SHA256:DHE-DSS-AES256-SHA:DHE-RSA-AES256-SHA:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!3DES:!MD5:!PSK";
-        } else {
-            ciphers = "ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-DSS-AES128-GCM-SHA256:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA256:DHE-RSA-AES256-SHA256:DHE-DSS-AES256-SHA:DHE-RSA-AES256-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:AES:CAMELLIA:DES-CBC3-SHA:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!aECDH:!EDH-DSS-DES-CBC3-SHA:!EDH-RSA-DES-CBC3-SHA:!KRB5-DES-CBC3-SHA";
-        }
-        
+        string ciphers = "ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-DSS-AES128-GCM-SHA256:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA256:DHE-RSA-AES256-SHA256:DHE-DSS-AES256-SHA:DHE-RSA-AES256-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:AES:CAMELLIA:DES-CBC3-SHA:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!aECDH:!EDH-DSS-DES-CBC3-SHA:!EDH-RSA-DES-CBC3-SHA:!KRB5-DES-CBC3-SHA";
         if (SSL_CTX_set_cipher_list(ctx->native_handle() , ciphers.c_str()) != 1) {
-            std::cout << "Error setting cipher list" << std::endl;
+            cout << "Error setting cipher list" << endl;
         }
-    } catch (std::exception& e) {
-        std::cout << "Exception: " << e.what() << std::endl;
+    } catch (exception& e) {
+        cout << "Exception: " << e.what() << endl;
     }
 	return ctx;
 }
+#endif

@@ -7,6 +7,8 @@ project (rpi-intercom)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_BUILD_TYPE Debug)
 
+# add_definitions(-DUSE_HTTPS)
+
 # To fix "relocation R_X86_64_32 against `.rodata.str1.1' can not be used when making a PIE object" error on Unbuntu 18.04
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -no-pie")
 

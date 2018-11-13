@@ -4,23 +4,20 @@
 #include <iostream>
 #include <boost/asio.hpp>
 #include <boost/signals2.hpp>
-
-#include <websocketpp/config/asio.hpp>
 #include <websocketpp/server.hpp>
-
 using boost::asio::ip::tcp;
 
-typedef websocketpp::lib::shared_ptr<websocketpp::lib::asio::ssl::context> context_ptr;
+#ifdef USE_HTTPS
+#include <websocketpp/config/asio.hpp>
 typedef websocketpp::server<websocketpp::config::asio_tls> WSServer;
+typedef websocketpp::lib::shared_ptr<websocketpp::lib::asio::ssl::context> context_ptr;
+#else
+#include <websocketpp/config/asio_no_tls.hpp>
+typedef websocketpp::server<websocketpp::config::asio> WSServer;
+#endif
+
 typedef WSServer::connection_type::request_type WSRequest;
 typedef set<websocketpp::connection_hdl,owner_less<websocketpp::connection_hdl> > ConnectionList;
-
-// See https://wiki.mozilla.org/Security/Server_Side_TLS for more details about
-// the TLS modes. The code below demonstrates how to implement both the modern
-enum tls_mode {
-    MOZILLA_INTERMEDIATE = 1,
-    MOZILLA_MODERN = 2
-};
 
 class CHttpServer
 {
@@ -37,6 +34,9 @@ private:
 	void OnClose (websocketpp::connection_hdl hdl);
 	void OnHttp(websocketpp::connection_hdl hdl);
 	void OnTimer (void);
+	#ifdef USE_HTTPS
+	context_ptr OnTlsInit (websocketpp::connection_hdl hdl);
+	#endif
 
 // Members values
 	WSServer mServer;

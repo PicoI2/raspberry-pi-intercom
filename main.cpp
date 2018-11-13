@@ -88,7 +88,7 @@ void CMain::Start ()
     });
     
     // Start HttpServer
-    HttpServer.Start(&mIoService, stoul(Config.GetString("http-port")));
+    HttpServer.Start(&mIoService, Config.GetULong("http-port", false));
     HttpServer.RequestSignal.connect([=](const WSRequest& aHttpRequest){
         return OnRequest(aHttpRequest);
     });

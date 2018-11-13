@@ -43,7 +43,9 @@ Then run
 
 HTTPS
 ---------
-Create your own SSL/TLS self-signed keys :<br>
+Uncomment "add_definitions(-DUSE_HTTPS)" in CMakeLists.txt<br>
+Add your certificate files ssl/privkey1.pem and ssl/cert1.pem<br>
+You can create your own SSL/TLS self-signed keys :<br>
 ```Shell
 openssl req -x509 -newkey rsa:4096 -keyout ssl/privkey1.pem -out ssl/cert1.pem -days 365
 ```
@@ -56,7 +58,7 @@ As an example, this is a list of what I use :
 - Fisheye 5MP 1080P camera (~14€)
 - USB 2.0 Microphone SF-555B (~8€)
 - EU Plug 5V 3A converter micro USB (~7€)
-- Flat loud speaker HP299 (~5€)
+- 2W 28mm speaker (~5€)
 - LM386 Audio amplifier module 5-12V 10K (~3€)
 - DC 5V Songle power relay (~1€)
 - 3.5mm mono male plug jack adapter (~0.20€)
