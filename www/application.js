@@ -1,8 +1,12 @@
 angular.module("ngApp", [])
 .controller("intercomController", function ($http, $timeout) {
     let me = this;
-    me.stack = [];
+    me.recvQueue = [];
+    me.sendQueue = new Int16Array();
     me.videoSrc = `http://${window.location.host.substr(0, window.location.host.lastIndexOf(':'))}:8081`;
+
+    me.recAudioContext = new AudioContext();
+    console.log("me.recAudioContext:", me.recAudioContext);
 
     // Read configuration and then start websocket if needed
     $http.get("/config").then(
@@ -16,10 +20,10 @@ angular.module("ngApp", [])
                 me.videoSrc = `http://${config.videoSrc}:8081`;
 
                 // Create audio context with sample rate
-                me.audioContext = new AudioContext({
+                me.playAudioContext = new AudioContext({
                     sampleRate: me.rate,
                 });
-                console.log("me.audioContext:", me.audioContext);
+                console.log("me.playAudioContext:", me.playAudioContext);
 
                 if (!me.mbModeClient) {
                     // Start weboscket
@@ -76,12 +80,36 @@ angular.module("ngApp", [])
             const fileReader = new FileReader();
             // onloadend will be called once readAsArrayBuffer has finished
             fileReader.onloadend = function () {
+                // Convert from int to float
                 let sampleIntArray = new Int16Array(fileReader.result);
                 let sampleFloatArray = new Float32Array(sampleIntArray.length);
                 for (let i=0; i<sampleIntArray.length; ++i) {
                     sampleFloatArray[i] = sampleIntArray[i] / 0x7FFF;
                 }
-                me.stack.push(sampleFloatArray);
+                // If rate of audio context is not the same of sample, convert it to expected sample rate
+                if (me.playAudioContext.sampleRate != me.rate) {
+                    const offlineCtx = new OfflineAudioContext (1, me.frameBySample * (me.playAudioContext.sampleRate / me.rate) , me.playAudioContext.sampleRate);
+                    const source = offlineCtx.createBufferSource();
+                    source.buffer = me.playAudioContext.createBuffer(1, me.frameBySample, me.rate);
+                    for (let i=0; i<sampleFloatArray.length; ++i) {
+                        source.buffer.getChannelData(0)[i] = sampleFloatArray[i];
+                    }
+                    source.connect(offlineCtx.destination);
+                    source.start();
+                    offlineCtx.startRendering().then(function(renderedBuffer) {
+                        for (let i=0; i<renderedBuffer.length; ++i) {
+                            me.recvQueue.push(renderedBuffer.getChannelData(0)[i]);
+                        }
+                    }).catch(function(err) {
+                        console.log('Rendering failed: ' + err);
+                    });
+                }
+                else {
+                    // No need to convert sample rate
+                    for (let i=0; i<sampleFloatArray.length; ++i) {
+                        me.recvQueue.push(sampleFloatArray[i]);
+                    }   
+                }
             }
             fileReader.readAsArrayBuffer(msg.data);
         }
@@ -148,19 +176,11 @@ angular.module("ngApp", [])
         if (!me.mbModeClient) {
             if (me.audioRing) me.audioRing.pause();
             me.listening = true;
-            me.listenProcess = me.audioContext.createScriptProcessor(me.frameBySample, 0, 1);
-            me.listenProcess.connect(me.audioContext.destination);
+            me.listenProcess = me.playAudioContext.createScriptProcessor(me.frameBySample, 0, 1);
+            me.listenProcess.connect(me.playAudioContext.destination);
             me.listenProcess.onaudioprocess = function(e) {
-                // console.log("play...");
-                let sampleFloatArray = me.stack.pop();
-                if (sampleFloatArray) {
-                    // console.log("pop OK");
-                    for (let i=0; i<sampleFloatArray.length; ++i) {
-                        e.outputBuffer.getChannelData(0)[i] = sampleFloatArray[i];
-                    }
-                }
-                else {
-                    console.log("nothing to read");
+                for (let i=0; i<e.outputBuffer.length && me.recvQueue.length > 0; ++i) {
+                    e.outputBuffer.getChannelData(0)[i] = me.recvQueue.shift();
                 }
             };
         }
@@ -176,32 +196,52 @@ angular.module("ngApp", [])
         me.listen(false);
         if (!me.mbModeClient) {
             if (me.audioRing) me.audioRing.pause();
-
             navigator.mediaDevices.getUserMedia({ audio: {sampleRate: me.rate, channelCount: 1, echoCancellation: true} }).then( function(stream) {
-                // console.log("stream:", stream);
-                // console.log("stream.getAudioTracks()[0]:", stream.getAudioTracks()[0]);
-                // console.log("stream.getAudioTracks()[0].getConstraints():", stream.getAudioTracks()[0].getConstraints());
-                // console.log("stream.getAudioTracks()[0].getSettings():", stream.getAudioTracks()[0].getSettings());
-                me.source = me.audioContext.createMediaStreamSource(stream);
-                me.speakProcess = me.audioContext.createScriptProcessor(me.frameBySample, 1, 0);
+                me.source = me.recAudioContext.createMediaStreamSource(stream);
+                me.speakProcess = me.recAudioContext.createScriptProcessor(me.frameBySample, 1, 0);
                 me.source.connect(me.speakProcess);
                 me.speakProcess.onaudioprocess = function(e) {
                     // console.log("record...");
-                    if (e.inputBuffer.sampleRate != me.rate) {
-                        me.message = `Sample rate error ${e.inputBuffer.sampleRate} != ${me.rate}`;
-                        // TODO Convert to expected rate with OfflineAudioContext
-                        // or skip frames when copying
-                    }
-
-                    let sampleArray = new Int16Array(e.inputBuffer.getChannelData(0).length);
-                    for (let i=0; i<e.inputBuffer.getChannelData(0).length; ++i) {
-                        sampleArray[i] = e.inputBuffer.getChannelData(0)[i] * 0x7FFF;
-                    }
-                    me.ws.send(sampleArray);
+                    me.sendBuffer(e.inputBuffer);
                 };
             }).catch(function(err) {
                 console.log("getUserMedia error: ", err);
             });
+        }
+    };
+
+    // Convert buffer from float to int and send it on websocket
+    me.sendBuffer = function (inputBuffer) {
+        if (me.recAudioContext.sampleRate != me.rate) {
+            // Convert rate TODO
+            const offlineCtx = new OfflineAudioContext (1, me.frameBySample, me.rate);
+            const source = offlineCtx.createBufferSource();
+            // console.log("e.inputBuffer: ", e.inputBuffer);
+            source.buffer = inputBuffer;
+            source.connect(offlineCtx.destination);
+            console.log('Start rendering...');
+            source.start();
+            offlineCtx.startRendering().then(function(renderedBuffer) {
+                console.log('Rendering completed successfully');
+                buffer = renderedBuffer.getChannelData(0)
+                for (let i=0; i<buffer.length; ++i) {
+                    me.sendQueue.push(buffer[i] * 0x7FFF);
+                    if (me.sendQueue.length == me.frameBySample) {
+                        me.ws.send(me.sendQueue);
+                        me.sendQueue.splice(0, me.sendQueue.length) // Empty me.sendQueue
+                    }
+                }
+            }).catch(function(err) {
+                console.log('Rendering failed: ' + err);
+            });
+        }
+        else {
+            buffer = inputBuffer.getChannelData(0)
+            let sampleArray = new Int16Array(buffer.length);
+            for (let i=0; i<buffer.length; ++i) {
+                sampleArray[i] = buffer[i] * 0x7FFF;
+            }
+            me.ws.send(sampleArray);
         }
     };
 
@@ -225,8 +265,8 @@ angular.module("ngApp", [])
 
         // Stop audio process
         if (me.source) me.source.disconnect(me.speakProcess);
-        if (me.listenProcess) me.listenProcess.disconnect(me.audioContext.destination);
+        if (me.listenProcess) me.listenProcess.disconnect(me.playAudioContext.destination);
         me.listening = false;
-        me.stack = [];
+        me.recvQueue = [];
     };
 });

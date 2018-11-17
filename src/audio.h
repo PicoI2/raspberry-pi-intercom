@@ -8,10 +8,10 @@
 using namespace std;
 
 
-#define RATE 44100  // Hz
+#define RATE 8000  // Hz
 #define FRAME_SIZE 2 // 16 bits
 #define SAMPLE_SIZE 4096
-#define FRAME_BY_SAMPLE (SAMPLE_SIZE / FRAME_SIZE)
+#define FRAME_BY_SAMPLE (SAMPLE_SIZE / FRAME_SIZE)  // Must be a power of 2, MAX 16384
 
 
 
