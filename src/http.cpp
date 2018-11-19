@@ -28,7 +28,7 @@ string GetMimeType(string aUri)
     if (string::npos != PosLastDot) {
         string Extension = aUri.substr(PosLastDot);
         if (Extension.size()>1) {
-            Extension = Extension.substr(1);	// Remove the '.'
+            Extension = Extension.substr(1);    // Remove the '.'
         }
         boost::algorithm::to_lower(Extension);
 

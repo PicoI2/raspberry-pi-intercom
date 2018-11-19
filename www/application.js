@@ -2,7 +2,7 @@ angular.module("ngApp", [])
 .controller("intercomController", function ($http, $timeout) {
     let me = this;
     me.recvQueue = [];
-    me.sendQueue = new Int16Array();
+    me.sendQueue = [];
     me.videoSrc = `http://${window.location.host.substr(0, window.location.host.lastIndexOf(':'))}:8081`;
 
     me.recAudioContext = new AudioContext();
@@ -17,7 +17,9 @@ angular.module("ngApp", [])
                 me.mbModeClient = ("client" == config.mode);
                 me.frameBySample = config.frameBySample;
                 me.rate = config.rate;
-                me.videoSrc = `http://${config.videoSrc}:8081`;
+                if (me.mbModeClient) {
+                    me.videoSrc = `http://${config.videoSrc}:8081`;
+                }
 
                 // Create audio context with sample rate
                 me.playAudioContext = new AudioContext({
@@ -213,22 +215,23 @@ angular.module("ngApp", [])
     // Convert buffer from float to int and send it on websocket
     me.sendBuffer = function (inputBuffer) {
         if (me.recAudioContext.sampleRate != me.rate) {
-            // Convert rate TODO
+            // Convert rate
             const offlineCtx = new OfflineAudioContext (1, me.frameBySample, me.rate);
             const source = offlineCtx.createBufferSource();
             // console.log("e.inputBuffer: ", e.inputBuffer);
             source.buffer = inputBuffer;
             source.connect(offlineCtx.destination);
-            console.log('Start rendering...');
+            // console.log('Start rendering...');
             source.start();
             offlineCtx.startRendering().then(function(renderedBuffer) {
-                console.log('Rendering completed successfully');
+                // console.log('Rendering completed successfully');
                 buffer = renderedBuffer.getChannelData(0)
                 for (let i=0; i<buffer.length; ++i) {
                     me.sendQueue.push(buffer[i] * 0x7FFF);
                     if (me.sendQueue.length == me.frameBySample) {
-                        me.ws.send(me.sendQueue);
-                        me.sendQueue.splice(0, me.sendQueue.length) // Empty me.sendQueue
+                        let sample = Int16Array.from(me.sendQueue);
+                        me.ws.send(sample);
+                        me.sendQueue = []; // Empty me.sendQueue
                     }
                 }
             }).catch(function(err) {
@@ -268,5 +271,6 @@ angular.module("ngApp", [])
         if (me.listenProcess) me.listenProcess.disconnect(me.playAudioContext.destination);
         me.listening = false;
         me.recvQueue = [];
+        me.sendQueue = [];
     };
 });

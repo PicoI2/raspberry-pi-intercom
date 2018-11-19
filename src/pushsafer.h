@@ -7,11 +7,11 @@ using boost::asio::ip::tcp;
 class CPushSafer
 {
 public:
-	bool Init (boost::asio::io_service* apIoService);
-	bool Notification (string aMessage);
+    bool Init (boost::asio::io_service* apIoService);
+    bool Notification (string aMessage);
     string ToFormData (string aKey, string aValue);
 
-	boost::asio::io_service* mpIoService;
+    boost::asio::io_service* mpIoService;
 };
 
 extern CPushSafer PushSafer;

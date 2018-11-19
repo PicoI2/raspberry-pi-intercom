@@ -13,7 +13,7 @@ bool CUdp::Start (boost::asio::io_service* apIoService)
 {
     mpIoService = apIoService;
     udp::endpoint endpoint(boost::asio::ip::address::from_string("0.0.0.0"), Config.GetULong("local-udp-port"));
-	mpSocket = new udp::socket(*mpIoService, endpoint);
+    mpSocket = new udp::socket(*mpIoService, endpoint);
     mpSocket->set_option(udp::socket::reuse_address(true));
 
     if ("server" == Config.GetString("mode")) {
@@ -25,13 +25,13 @@ bool CUdp::Start (boost::asio::io_service* apIoService)
         mRemoteEndPoint = udp::endpoint(RemoteAddress, Config.GetULong("server-udp-port"));
     }
     
-	StartListening();
+    StartListening();
     return true;
 }
 
 void CUdp::Stop()
 {
-	mpSocket->close();
+    mpSocket->close();
 }
 
 void CUdp::StartListening (void)

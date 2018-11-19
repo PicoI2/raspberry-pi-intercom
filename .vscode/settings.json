@@ -58,5 +58,7 @@
         "string_view": "cpp",
         "algorithm": "cpp",
         "asoundlib.h": "c"
-    }
+    },
+    "editor.detectIndentation": false,
+    "editor.tabSize": 4
 }

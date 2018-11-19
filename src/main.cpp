@@ -24,7 +24,7 @@ int main (int argc, char** argv)
         cerr << "Missing config file" << endl;
     }
 
-	return 0;
+    return 0;
 }
 
 void CMain::Start ()
@@ -179,7 +179,7 @@ string CMain::OnRequest (const WSRequest& aHttpRequest) {
             JsonConfig["mode"] = Config.GetString("mode");
             JsonConfig["frameBySample"] = FRAME_BY_SAMPLE;
             JsonConfig["rate"] = RATE;
-            JsonConfig["videoSrc"] = mbClientMode ? Config.GetString("server-ip") : "localhost";
+            JsonConfig["videoSrc"] = mbClientMode ? Config.GetString("server-ip") : "";
             Result = JsonConfig.toStyledString();
         }
         else if (!mbClientMode) {    // If server

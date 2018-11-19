@@ -22,28 +22,28 @@ typedef set<websocketpp::connection_hdl,owner_less<websocketpp::connection_hdl> 
 class CHttpServer
 {
 public:
-	bool Start (boost::asio::io_service* apIoService, int aPort);
-	void Stop ();
-	void SendMessage (string aMessage);
+    bool Start (boost::asio::io_service* apIoService, int aPort);
+    void Stop ();
+    void SendMessage (string aMessage);
     void SendMessage (char* aMessage, size_t aSize);
-	boost::signals2::signal <string (const WSRequest& aHttpRequest)> RequestSignal;
+    boost::signals2::signal <string (const WSRequest& aHttpRequest)> RequestSignal;
 
 private:
-	void OnOpen (websocketpp::connection_hdl hdl);
-	void OnMessage (websocketpp::connection_hdl hdl, WSServer::message_ptr msg);
-	void OnClose (websocketpp::connection_hdl hdl);
-	void OnHttp(websocketpp::connection_hdl hdl);
-	void OnTimer (void);
-	#ifdef USE_HTTPS
-	context_ptr OnTlsInit (websocketpp::connection_hdl hdl);
-	#endif
+    void OnOpen (websocketpp::connection_hdl hdl);
+    void OnMessage (websocketpp::connection_hdl hdl, WSServer::message_ptr msg);
+    void OnClose (websocketpp::connection_hdl hdl);
+    void OnHttp(websocketpp::connection_hdl hdl);
+    void OnTimer (void);
+    #ifdef USE_HTTPS
+    context_ptr OnTlsInit (websocketpp::connection_hdl hdl);
+    #endif
 
 // Members values
-	WSServer mServer;
-	ConnectionList mClientList;
+    WSServer mServer;
+    ConnectionList mClientList;
 
-	boost::asio::io_service* mpIoService;
-	boost::asio::deadline_timer* mpTimer;
+    boost::asio::io_service* mpIoService;
+    boost::asio::deadline_timer* mpTimer;
     boost::posix_time::millisec* mpInterval;
 };
 
