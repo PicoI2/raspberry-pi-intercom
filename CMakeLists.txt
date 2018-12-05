@@ -1,6 +1,7 @@
 # sudo apt install libboost-system-dev
 # sudo apt install libwebsocketpp-dev
 # sudo apt install libjsoncpp-dev
+# sudo apt install libssl-dev
 
 cmake_minimum_required (VERSION 3.0.2)
 project (rpi-intercom)
@@ -17,6 +18,7 @@ set(BOOST_MIN_VERSION "1.39.0")
 find_package(Boost ${BOOST_MIN_VERSION} REQUIRED COMPONENTS system)
 
 find_package(jsoncpp REQUIRED)
+# find_package(ssl REQUIRED) TODO
 
 file (GLOB SOURCE_FILES src/*.cpp)
 

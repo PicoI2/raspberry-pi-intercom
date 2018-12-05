@@ -1,7 +1,14 @@
 # raspberry-pi-intercom
-All you need to make an intercom with raspberry pi (not finished yet)
+All you need to make an intercom with raspberry pi.
 
 WARNING : THIS PROJECT IS NOT FINISHED YET.
+TODO
+---------
+- Handle session in cookie
+- Add password
+- Turn screen on and off in client raspberry pi
+- Allow user to select input and output
+- Store selected input and output
 
 How does it works
 ---------

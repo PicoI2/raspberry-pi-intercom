@@ -1,0 +1,18 @@
+<!DOCTYPE HTML>
+<html lang="fr" ng-app="ngApp">
+<head>
+    <title>rpi-intercom</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <script src="angular.1.7.4.min.js"></script>
+    <script src="test.js"></script>
+</head>
+<body ng-controller="testController as ctrl">
+    <h2>Test your microphone</h2>
+    Input : <select ng-options="device.deviceId as device.label for device in ctrl.devices | filter:{kind:'audioinput'}" ng-model="ctrl.input"></select><br>
+    <!-- Output : <select ng-options="device.deviceId as device.label for device in ctrl.devices | filter:{kind:'audiooutput'}" ng-model="ctrl.output"></select><br> -->
+    <br>
+    <button ng-click="ctrl.start()">Start</button>
+    <button ng-click="ctrl.stop()">Stop</button><br>
+</body>
+</html>
