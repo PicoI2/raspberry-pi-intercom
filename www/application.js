@@ -1,12 +1,9 @@
 angular.module("ngApp", [])
-.controller("intercomController", function ($http, $timeout) {
+.controller("intercomController", function ($http, $timeout, $scope) {
     let me = this;
     me.recvQueue = [];
     me.sendQueue = [];
     me.videoSrc = `http://${window.location.host.substr(0, window.location.host.lastIndexOf(':'))}:8081`;
-
-    me.recAudioContext = new AudioContext();
-    console.log("me.recAudioContext:", me.recAudioContext);
 
     // Read configuration and then start websocket if needed
     $http.get("/config").then(
@@ -20,13 +17,6 @@ angular.module("ngApp", [])
                 if (me.mbModeClient) {
                     me.videoSrc = `http://${config.videoSrc}:8081`;
                 }
-
-                // Create audio context with sample rate
-                me.playAudioContext = new AudioContext({
-                    sampleRate: me.rate,
-                });
-                console.log("me.playAudioContext:", me.playAudioContext);
-
                 if (!me.mbModeClient) {
                     // Start weboscket
                     me.ws = connect();
@@ -69,7 +59,7 @@ angular.module("ngApp", [])
         // console.log(typeof msg.data);
         // console.log(msg.data);
         if ("string" == typeof msg.data) {
-            console.log(msg.data);
+            // console.log(msg.data);
             if ("doorbell" == msg.data) {
                 me.ring();
             }
@@ -89,10 +79,10 @@ angular.module("ngApp", [])
                     sampleFloatArray[i] = sampleIntArray[i] / 0x7FFF;
                 }
                 // If rate of audio context is not the same of sample, convert it to expected sample rate
-                if (me.playAudioContext.sampleRate != me.rate) {
-                    const offlineCtx = new OfflineAudioContext (1, me.frameBySample * (me.playAudioContext.sampleRate / me.rate) , me.playAudioContext.sampleRate);
+                if (me.audioContext.sampleRate != me.rate) {
+                    const offlineCtx = new OfflineAudioContext (1, me.frameBySample * (me.audioContext.sampleRate / me.rate) , me.audioContext.sampleRate);
                     const source = offlineCtx.createBufferSource();
-                    source.buffer = me.playAudioContext.createBuffer(1, me.frameBySample, me.rate);
+                    source.buffer = me.audioContext.createBuffer(1, me.frameBySample, me.rate);
                     for (let i=0; i<sampleFloatArray.length; ++i) {
                         source.buffer.getChannelData(0)[i] = sampleFloatArray[i];
                     }
@@ -178,11 +168,22 @@ angular.module("ngApp", [])
         if (!me.mbModeClient) {
             if (me.audioRing) me.audioRing.pause();
             me.listening = true;
-            me.listenProcess = me.playAudioContext.createScriptProcessor(me.frameBySample, 0, 1);
-            me.listenProcess.connect(me.playAudioContext.destination);
-            me.listenProcess.onaudioprocess = function(e) {
+            if (!me.audioContext) {
+                me.audioContext = new AudioContext({
+                    sampleRate: me.rate,
+                });
+                console.log("me.audioContext:", me.audioContext);
+            }
+            me.audioProcess = me.audioContext.createScriptProcessor(me.frameBySample, 1, 1);
+            me.audioProcess.connect(me.audioContext.destination);
+            me.audioProcess.onaudioprocess = function(e) {
+                // console.log("play...:");
                 for (let i=0; i<e.outputBuffer.length && me.recvQueue.length > 0; ++i) {
                     e.outputBuffer.getChannelData(0)[i] = me.recvQueue.shift();
+                }
+                if (me.recording) {
+                    // console.log("record...");
+                    me.sendBuffer(e.inputBuffer);
                 }
             };
         }
@@ -198,14 +199,11 @@ angular.module("ngApp", [])
         me.listen(false);
         if (!me.mbModeClient) {
             if (me.audioRing) me.audioRing.pause();
-            navigator.mediaDevices.getUserMedia({ audio: {sampleRate: me.rate, channelCount: 1, echoCancellation: true} }).then( function(stream) {
-                me.source = me.recAudioContext.createMediaStreamSource(stream);
-                me.speakProcess = me.recAudioContext.createScriptProcessor(me.frameBySample, 1, 0);
-                me.source.connect(me.speakProcess);
-                me.speakProcess.onaudioprocess = function(e) {
-                    // console.log("record...");
-                    me.sendBuffer(e.inputBuffer);
-                };
+            const deviceId = me.device ? me.device.deviceId : undefined;
+            navigator.mediaDevices.getUserMedia({ audio: {sampleRate: me.rate, channelCount: 1, echoCancellation: true, deviceId: deviceId} }).then( function(stream) {
+                me.source = me.audioContext.createMediaStreamSource(stream);
+                me.source.connect(me.audioProcess);
+                me.recording = true;
             }).catch(function(err) {
                 console.log("getUserMedia error: ", err);
             });
@@ -214,7 +212,7 @@ angular.module("ngApp", [])
 
     // Convert buffer from float to int and send it on websocket
     me.sendBuffer = function (inputBuffer) {
-        if (me.recAudioContext.sampleRate != me.rate) {
+        if (me.audioContext.sampleRate != me.rate) {
             // Convert rate
             const offlineCtx = new OfflineAudioContext (1, me.frameBySample, me.rate);
             const source = offlineCtx.createBufferSource();
@@ -267,10 +265,27 @@ angular.module("ngApp", [])
         me.get('/hangup');
 
         // Stop audio process
-        if (me.source) me.source.disconnect(me.speakProcess);
-        if (me.listenProcess) me.listenProcess.disconnect(me.playAudioContext.destination);
-        me.listening = false;
+        if (me.listening) {
+            me.audioProcess.disconnect(me.audioContext.destination);
+            me.listening = false;
+        }
+        if (me.recording) {
+            me.source.disconnect(me.audioProcess);
+            me.recording = false;
+        }
         me.recvQueue = [];
         me.sendQueue = [];
     };
+
+    // List availables "input devices". Useful for chrome but not for firefox
+    me.devices = [];
+    navigator.mediaDevices.enumerateDevices().then((devices) => {
+        devices.forEach (function (device) {
+            if (device.kind == "audioinput" && device.deviceId != "default") {
+                me.devices.push(device);
+            }
+        });
+        $scope.$apply()
+        console.log("devices:", me.devices);
+    });
 });
