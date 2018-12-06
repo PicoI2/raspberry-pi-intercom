@@ -81,7 +81,7 @@ void CHttpServer::SendMessage (string aMessage) {
 }
 
 // Broadcast binary message to all clients
-void CHttpServer::SendMessage (char* aMessage, size_t aSize) {
+void CHttpServer::SendMessage (const char* aMessage, size_t aSize) {
     for (auto hdl : mClientList) {
         mServer.send(hdl, aMessage, aSize, websocketpp::frame::opcode::binary);
     }

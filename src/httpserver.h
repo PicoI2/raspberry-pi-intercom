@@ -25,7 +25,7 @@ public:
     bool Start (boost::asio::io_service* apIoService, int aPort);
     void Stop ();
     void SendMessage (string aMessage);
-    void SendMessage (char* aMessage, size_t aSize);
+    void SendMessage (const char* aMessage, size_t aSize);
     boost::signals2::signal <string (const WSRequest& aHttpRequest)> RequestSignal;
 
 private:

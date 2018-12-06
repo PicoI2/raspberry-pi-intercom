@@ -214,7 +214,7 @@ angular.module("ngApp", [])
     me.sendBuffer = function (inputBuffer) {
         if (me.audioContext.sampleRate != me.rate) {
             // Convert rate
-            const offlineCtx = new OfflineAudioContext (1, me.frameBySample, me.rate);
+            const offlineCtx = new OfflineAudioContext (1, me.frameBySample / (me.audioContext.sampleRate / me.rate), me.rate);
             const source = offlineCtx.createBufferSource();
             // console.log("e.inputBuffer: ", e.inputBuffer);
             source.buffer = inputBuffer;

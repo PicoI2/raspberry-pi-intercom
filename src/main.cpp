@@ -152,7 +152,7 @@ void CMain::OnMessage (const string aMessage) {
             Audio.Stop();
         }
         else if (string::npos != aMessage.find("dooropen")) {
-            IO.SetOutput(26, true, 2000);
+            IO.SetOutput(mOutputDoorOpen, true, 2000);
         }
         else {
             cout << "Received unknown message :'" << aMessage << "'" << endl;
@@ -195,7 +195,7 @@ string CMain::OnRequest (const WSRequest& aHttpRequest) {
                 Result = "OK";
             }
             else if ("/dooropen" == aHttpRequest.get_uri()) {
-                IO.SetOutput(26, true, 2000);
+                IO.SetOutput(mOutputDoorOpen, true, 2000);
                 Ring.Stop();
                 Udp.Send("dooropen");
                 Result = "OK";
