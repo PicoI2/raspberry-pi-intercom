@@ -55,7 +55,7 @@ void CMain::Start ()
 
         mOutputDoorOpen = Config.GetULong("output-door-open", false);
         if (mOutputDoorOpen) {
-            IO.AddOutput(mOutputDoorOpen, true);
+            IO.AddOutput(mOutputDoorOpen, false);
         }
     }
     else {  // If client, you could use buttons if you don't have a screen
