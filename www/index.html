@@ -9,7 +9,7 @@
 </head>
 <body ng-controller="intercomController as ctrl">
     <img ng-src="{{ctrl.videoSrc}}" width="640" height="480"><br>
-    <select ng-options="device as (device.kind + ' ' + device.label) for device in ctrl.devices" ng-model="ctrl.device"></select>
+    <select ng-options="device.deviceId as (device.kind + ' ' + device.label) for device in ctrl.devices" ng-model="ctrl.deviceId" ng-change="ctrl.saveDeviceId()"></select>
     <button ng-click="ctrl.stopring(true)">Stop ringing</button>
     <button ng-click="ctrl.listen(true)">Listen</button>
     <button ng-click="ctrl.speak(true)">Speak</button>

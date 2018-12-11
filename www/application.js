@@ -199,8 +199,7 @@ angular.module("ngApp", [])
         me.listen(false);
         if (!me.mbModeClient) {
             if (me.audioRing) me.audioRing.pause();
-            const deviceId = me.device ? me.device.deviceId : undefined;
-            navigator.mediaDevices.getUserMedia({ audio: {sampleRate: me.rate, channelCount: 1, echoCancellation: true, deviceId: deviceId} }).then( function(stream) {
+            navigator.mediaDevices.getUserMedia({ audio: {sampleRate: me.rate, channelCount: 1, echoCancellation: true, deviceId: me.deviceId} }).then( function(stream) {
                 me.source = me.audioContext.createMediaStreamSource(stream);
                 me.source.connect(me.audioProcess);
                 me.recording = true;
@@ -285,7 +284,16 @@ angular.module("ngApp", [])
                 me.devices.push(device);
             }
         });
-        $scope.$apply()
         console.log("devices:", me.devices);
+        // Read device ID in localStorage
+        me.deviceId = localStorage.getItem("deviceId");
+        console.log("me.deviceId:", me.deviceId);
+        $scope.$apply()
     });
+
+    // Save deivceID in localStorage
+    me.saveDeviceId = function () {
+        localStorage.setItem("deviceId", me.deviceId);
+        console.log("me.deviceId:", me.deviceId);
+    };
 });
