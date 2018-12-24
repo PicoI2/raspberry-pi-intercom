@@ -1,0 +1,15 @@
+[Unit]
+Description=Raspberry pi intercom service
+ 
+[Service]
+ExecStart=/opt/raspberry-pi-intercom/rpi-intercom config-server.cfg
+# StandardOutput=syslog
+# StandardError=syslog
+SyslogIdentifier=rpi-intercom
+WorkingDirectory=/opt/raspberry-pi-intercom/
+User=pi
+Group=pi
+ 
+[Install]
+WantedBy=multi-user.target
+Alias=rpi-intercom.service

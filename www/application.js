@@ -3,7 +3,15 @@ angular.module("ngApp", [])
     let me = this;
     me.recvQueue = [];
     me.sendQueue = [];
-    me.videoSrc = `http://${window.location.host.substr(0, window.location.host.lastIndexOf(':'))}:8081`;
+
+    // Useful in server mode, generate video URL
+    const colonIndex = window.location.host.lastIndexOf(':');
+    if (colonIndex > 0) {
+        me.videoSrc = `http://${window.location.host.substr(0, colonIndex)}:8081`;
+    }
+    else {
+        me.videoSrc = `http://${window.location.host}:8081`;
+    }
 
     // Read configuration and then start websocket if needed
     $http.get("/config").then(
