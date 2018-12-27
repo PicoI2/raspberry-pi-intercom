@@ -1,5 +1,5 @@
 #include "http.h"
-
+#include <iostream>
 #include <boost/algorithm/string.hpp>
 
 namespace http {
@@ -19,7 +19,11 @@ ExtensionToMime ExtensionsArray[] = {
     {"js", JS},
     {"mp3", MP3},
     {"pbg", PNG},
+    {"ttf", TTF},
+    {"svg", SVG},
     {"wav", WAV},
+    {"woff", WOFF},
+    {"woff2", WOFF2},
 };
 
 string GetMimeType(string aUri)
@@ -37,6 +41,7 @@ string GetMimeType(string aUri)
                 return Ext.Mime;
             }
         }
+        cerr << "Unknown mime type :'" << aUri << "' file";
     }
 
     return "";

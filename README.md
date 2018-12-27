@@ -43,6 +43,7 @@ make
 How to use it
 ---------
 Modify the config-server.cfg file to match your configuration.<br>
+If using port below 1024 dont forget to do : "sudo setcap 'cap_net_bind_service=+ep' rpi-intercom"<br>
 Then run
 ```Shell
 ./rpi-intercom config-server.cfg
