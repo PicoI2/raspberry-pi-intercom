@@ -9,3 +9,11 @@ speaker_diameter = 28;
 micro_diameter = 6;
 margin = 0.4;
 name = "DOORBELL";
+
+// Only for client
+client_height = 125;   // z axis
+client_width = 165;     // x axis
+client_deph = 35;      // y axis
+screen_width = 118;
+screen_height = 70.5;   // Diff 5.5mm from pcb top to screen top
+screen_pcb_height = 78;
