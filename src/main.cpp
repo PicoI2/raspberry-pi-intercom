@@ -11,6 +11,7 @@
 #include "pushsafer.h"
 #include "ring.h"
 #include "audio.h"
+#include "sessions.h"
 
 CMain Main;
 
@@ -170,6 +171,8 @@ void CMain::OnMessage (const string aMessage) {
 
 // When an HTTP Request does not concern a file
 string CMain::OnRequest (const WSRequest& aHttpRequest) {
+    bool bPasswordOk = Config.GetString("password", false).empty();
+    bPasswordOk = bPasswordOk || Sessions.IsSessionExist(http::GetCookie(aHttpRequest.get_header("Cookie"), "session_id"));
     string Result;
     
     if (aHttpRequest.get_method() == http::method::GET) {
@@ -182,6 +185,13 @@ string CMain::OnRequest (const WSRequest& aHttpRequest) {
             JsonConfig["videoSrc"] = mbClientMode ? Config.GetString("server-ip") : "";
             Result = JsonConfig.toStyledString();
         }
+        else if ("/password_ok" == aHttpRequest.get_uri()) {
+            Result = bPasswordOk ? "true" : "false";
+        }
+        else if (!bPasswordOk) {
+            Result = "Wrong password";
+        }
+        // All case below this line works only if bPasswordOk
         else if (!mbClientMode) {    // If server
             if ("/startlisten" == aHttpRequest.get_uri()) {
                 Ring.Stop();

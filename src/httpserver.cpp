@@ -1,6 +1,8 @@
 #include "http.h"
 #include "httpserver.h"
 #include "audio.h"
+#include "sessions.h"
+#include "config.h"
 
 #include <iostream>
 #include <fstream>
@@ -36,6 +38,8 @@ bool CHttpServer::Start(boost::asio::io_service* apIoService, int aPort)
         mpTimer->async_wait([this](const boost::system::error_code&){OnTimer();});
     }
 
+    mPassword = Config.GetString("password", false);
+
     return true;
 }
 
@@ -51,8 +55,22 @@ void CHttpServer::Stop()
 
 // When a client open a websocket
 void CHttpServer::OnOpen (websocketpp::connection_hdl hdl) {
-    mServer.send(hdl, ALIVE, websocketpp::frame::opcode::text);
-    mClientList.insert(hdl);
+    bool bPasswordOk = mPassword.empty();
+    if (!bPasswordOk) {
+        // Check session
+        WSServer::connection_ptr ConnectionPtr = mServer.get_con_from_hdl(hdl);
+        WSRequest Request = ConnectionPtr->get_request();
+        string Cookies = Request.get_header("Cookie");
+        string SessionId = http::GetCookie(Cookies, "session_id");
+        bPasswordOk = Sessions.IsSessionExist(SessionId);
+    }
+    if (bPasswordOk) {
+        mServer.send(hdl, ALIVE, websocketpp::frame::opcode::text);
+        mClientList.insert(hdl);
+    }
+    else {
+        mServer.close(hdl, websocketpp::close::status::going_away, "Wrong password");
+    }
 }
 
 // When a client close a websocket
@@ -88,8 +106,7 @@ void CHttpServer::SendMessage (const char* aMessage, size_t aSize) {
 }
 
 // On HTTP request
-void CHttpServer::OnHttp(websocketpp::connection_hdl hdl)
-{
+void CHttpServer::OnHttp(websocketpp::connection_hdl hdl) {
     cout << "OnHttp" << endl;
     WSServer::connection_ptr ConnectionPtr = mServer.get_con_from_hdl(hdl);
 
@@ -97,10 +114,12 @@ void CHttpServer::OnHttp(websocketpp::connection_hdl hdl)
     WSRequest Request = ConnectionPtr->get_request();
     string Method = Request.get_method();
     string Uri = Request.get_uri();
+    string Cookies = Request.get_header("Cookie");
+    string SessionId = http::GetCookie(Cookies, "session_id");
     string MimeType = http::mime::GetMimeType(Uri);
 
     // To redirect GET '/' to GET '/index.html'
-    if (MimeType.empty() && "GET" == Method && "/" == Uri) {
+    if (MimeType.empty() && http::method::GET == Method && "/" == Uri) {
         Uri = "/index.html";
         MimeType = http::mime::HTML;
     }
@@ -120,6 +139,24 @@ void CHttpServer::OnHttp(websocketpp::connection_hdl hdl)
             ConnectionPtr->append_header("Content-Type", MimeType);
             bOk = true;
         }
+    }
+    if (!mPassword.empty() && MimeType.empty() && "/password" == Uri) {
+        if (http::method::POST == Method) {
+            string password = Request.get_body();
+            if (password == mPassword) {
+                SessionId = Sessions.CreateSession();
+                ConnectionPtr->append_header("Set-Cookie", "session_id=" + SessionId + "; Max-Age=31536000");
+                ConnectionPtr->set_body("Password OK");
+            }
+            else {
+                ConnectionPtr->set_body("Wrong password");
+            }
+        }
+        else if (http::method::DELETE == Method) {
+            ConnectionPtr->append_header("Set-Cookie", "session_id=; Max-Age=1");
+        }
+        ConnectionPtr->set_status(websocketpp::http::status_code::ok);
+        bOk = true;
     }
     // Or return OK if request has been understood by main
     if (!bOk) {

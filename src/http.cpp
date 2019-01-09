@@ -1,8 +1,22 @@
 #include "http.h"
 #include <iostream>
 #include <boost/algorithm/string.hpp>
+#include <regex>
 
 namespace http {
+
+// Cookie example : yummy_cookie=choco; tasty_cookie=strawberry
+string GetCookie (string aCookies, string aName) 
+{
+    string Res = "";
+    regex Regex (aName + "=([^;\r\n]+)");
+    smatch Match;
+    if (regex_search(aCookies, Match, Regex)) {
+        Res = Match[1];
+    }
+    return Res;
+}
+
 namespace mime {
 
 struct ExtensionToMime

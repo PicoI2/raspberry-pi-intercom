@@ -45,6 +45,8 @@ private:
     boost::asio::io_service* mpIoService;
     boost::asio::deadline_timer* mpTimer;
     boost::posix_time::millisec* mpInterval;
+
+    string mPassword;
 };
 
 extern CHttpServer HttpServer;

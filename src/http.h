@@ -4,6 +4,9 @@
 using namespace std;
 
 namespace http {
+
+    string GetCookie (string aCookies, string aName);
+    
     namespace method {
         const static string GET = "GET";
         const static string HEAD = "HEAD";
@@ -30,4 +33,5 @@ namespace http {
 
         string GetMimeType(string aExtension);
     }
+    
 }

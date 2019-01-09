@@ -10,8 +10,8 @@
 </head>
 <body ng-controller="intercomController as ctrl">
     <img class="video" src="{{ctrl.videoSrc}}"><br>
-    <span>{{ctrl.message}}</span><br>
-    <div class="buttons">
+    <span ng-style="{'color': ctrl.message.color}">{{ctrl.message.text}}</span><br>
+    <div class="big-buttons">
         <button ng-click="ctrl.stopring(true)"><span class="glyphicon">&#xe123; </span>Stop ringing</button>
         <button ng-click="ctrl.listen(true)"><span class="glyphicon">&#xe035; </span>Listen</button>
         <button ng-click="ctrl.speak(true)"><span class="glyphicon">&#xe038; </span>Speak</button>
@@ -19,6 +19,11 @@
         <button ng-click="ctrl.hangup(true)"><span class="glyphicon">&#xe036; </span>Hangup</button>
     </div>
     <br><br>
-    <select ng-options="device.deviceId as (device.kind + ' ' + device.label) for device in ctrl.devices" ng-model="ctrl.deviceId" ng-change="ctrl.saveDeviceId()"></select>
+    <span ng-style="{'color': ctrl.bPasswordOk ? 'green' : 'red'}">Password: </span> <input type="password" ng-model="ctrl.password">
+    <button ng-if="!ctrl.bPasswordOk" ng-click="ctrl.sendPassword(true)"><span class="glyphicon">&#xe113; </span>Send password</button>
+    <button ng-if="ctrl.bPasswordOk && !ctrl.bPasswordSaved" ng-click="ctrl.savePassword(true)" title="nhetest"><span class="glyphicon">&#xe172; </span>Save password</button>
+    <button ng-if="ctrl.bPasswordOk" ng-click="ctrl.disconnect(true)"><span class="glyphicon">&#xe014; </span>Disconnect</button>
+    <br><br>
+    <span style="color: white">Audio input: </span> <select ng-options="device.deviceId as (device.kind + ' ' + device.label) for device in ctrl.devices" ng-model="ctrl.deviceId" ng-change="ctrl.saveDeviceId()"></select><br>
 </body>
 </html>

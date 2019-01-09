@@ -1,19 +1,31 @@
+@font-face {
+    font-family: "glyphicon";
+    src: url('glyphicons-halflings-regular.woff');  /* https://glyphicons.bootstrapcheatsheets.com/# */
+}
 body {
     background-color: black;
     width: 96wh;
     height: 96vh;
+    font-family: Arial, Helvetica, sans-serif;
 }
-.buttons {
+.glyphicon {
+    font-family: "glyphicon";
+}
+.big-buttons {
     display: flex;
     height: 16%;
     justify-content: space-around;
     align-items: stretch;
 }
-button {
+.big-buttons > button {
     font-size: 1.5vw;
     flex-basis: 19%;
     flex-shrink: 1;
     white-space: nowrap;
+}
+.big-buttons > button > .glyphicon {
+    display: block;
+    font-size: 3vw;
 }
 .video {
     width: 96%;
@@ -21,14 +33,4 @@ button {
     height: auto;
     display: block;
     margin: auto;
-}
-@font-face {
-    font-family: "glyphicon";
-    src: url('glyphicons-halflings-regular.woff');
-}
-/* https://glyphicons.bootstrapcheatsheets.com/# */
-.glyphicon {
-    display: block;
-    font-size: 3vw;
-    font-family: "glyphicon";
 }

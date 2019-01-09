@@ -3,6 +3,10 @@ angular.module("ngApp", [])
     let me = this;
     me.recvQueue = [];
     me.sendQueue = [];
+    me.message = {
+        color: "white",
+        message: "starting",
+    };
 
     // Useful in server mode, generate video URL
     const colonIndex = window.location.host.lastIndexOf(':');
@@ -32,7 +36,8 @@ angular.module("ngApp", [])
             }
         },
         function (response) {
-            me.message = "Failed to read configuration";
+            me.message.text = "Failed to read configuration";
+            me.message.color = "red";
         }
     );
 
@@ -51,13 +56,17 @@ angular.module("ngApp", [])
     // Websocket
     const onopen = function () {
         console.log('websocket onopen');
-        me.message = "Connected to server";
+        me.message.text = "Connected to server";
+        me.message.color = "green";
         me.wsConnected = true;
+        $scope.$apply();
     };
     const onclose = function () {
         console.log('websocket onclose');
-        me.message = "Disconnected from server";
+        me.message.text = "Disconnected from server";
+        me.message.color = "red";
         me.hangup(false);
+        $scope.$apply();
         // Try to reconnect in 5 seconds
         $timeout(function () {
             me.ws = connect();
@@ -304,4 +313,53 @@ angular.module("ngApp", [])
         localStorage.setItem("deviceId", me.deviceId);
         console.log("me.deviceId:", me.deviceId);
     };
+
+    // Send password to server
+    me.sendPassword = async function (bip) {
+        if (bip) {
+            me.bip();
+        }
+        await $http.post("/password", me.password);
+        me.checkPassword();
+    }
+
+    // Save password to local storage for next time
+    me.savePassword = function (bip) {
+        if (bip) {
+            me.bip();
+        }
+        localStorage.setItem("password", me.password);
+        me.bPasswordSaved = true;
+    }
+
+    // Clear password from local storage
+    me.disconnect = async function (bip) {
+        if (bip) {
+            me.bip();
+        }
+        localStorage.removeItem("password");
+        me.bPasswordSaved = false;
+        await $http.delete("/password");
+        me.checkPassword();
+    }
+
+    // Check if password is OK
+    me.checkPassword = function () {
+        console.log("checkPassword...");
+        $http.get("/password_ok").then(
+            function (response) {
+                me.bPasswordOk = ("true" == response.data);
+            },
+            function (response) {
+                me.bPasswordOk = false;
+            }
+        );
+    }
+
+    // At statup, load saved password
+    me.password = localStorage.getItem("password");
+    if (me.password) {
+        me.bPasswordSaved = true;
+        me.sendPassword(false);
+    }
 });
