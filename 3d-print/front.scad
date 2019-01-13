@@ -4,15 +4,15 @@ include <variables.scad>;
 color ("blue")
 difference () {
     // Box
-    cube([width, deph, height]);
+    cube([width, depth, height]);
     // Empty box
-    translate ([thickness, thickness, thickness]) cube ([width-2*thickness, deph, height]);
+    translate ([thickness, thickness, thickness]) cube ([width-2*thickness, depth, height]);
     // Camera hole
     translate ([0.5 * width, 1.5 * thickness, 0.80 * height]) rotate ([90,0,0]) cylinder (h = 2*thickness, r = (cam_diameter)/2);
     // Button hole
     translate ([0.8 * width, 1.5 * thickness, 0.15 * height]) rotate ([90,0,0]) cylinder (h = 2*thickness, r = (button_diameter)/2);
     // Screw hole
-    translate ([0.5 * width, 0.75 * deph, -margin]) cylinder (h = 2*thickness, r = thickness);
+    translate ([0.5 * width, 0.75 * depth, -margin]) cylinder (h = 2*thickness, r = thickness);
     // Name hole
     // translate ([0.1 * width, 0, 0.1 * height]) cube ([0.5 * width, 1, 0.1 * height]);
     // Speaker grid
