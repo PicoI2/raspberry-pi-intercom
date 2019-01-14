@@ -20,10 +20,14 @@ struct CAudioSample {
 class CAudio {
 public :
     
+    void Init ();
+    void AudioOnOff (bool abOn);
     void Play ();
     void Push (CAudioSample::Ptr apSample);
     void Record ();
     void Stop ();
+    bool SetOwner (string aOwner, bool bWantToOwn);
+    string GetOwner () {return mOwner;};
     
 protected :
     void PlayThread ();
@@ -34,6 +38,9 @@ protected :
     atomic<bool> mbRecord;
     mutex mMutexQueue;
     queue<CAudioSample::Ptr> mSamplesQueue;
+    long mOutputAudioOn;
+    atomic<char> mNbAudioUser;
+    string mOwner;
 };
 
 extern CAudio Audio;

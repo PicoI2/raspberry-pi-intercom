@@ -55,16 +55,13 @@ void CHttpServer::Stop()
 
 // When a client open a websocket
 void CHttpServer::OnOpen (websocketpp::connection_hdl hdl) {
-    bool bPasswordOk = mPassword.empty();
-    if (!bPasswordOk) {
-        // Check session
-        WSServer::connection_ptr ConnectionPtr = mServer.get_con_from_hdl(hdl);
-        WSRequest Request = ConnectionPtr->get_request();
-        string Cookies = Request.get_header("Cookie");
-        string SessionId = http::GetCookie(Cookies, "session_id");
-        bPasswordOk = Sessions.IsSessionExist(SessionId);
-    }
-    if (bPasswordOk) {
+    // Get session id
+    WSServer::connection_ptr ConnectionPtr = mServer.get_con_from_hdl(hdl);
+    WSRequest Request = ConnectionPtr->get_request();
+    string Cookies = Request.get_header("Cookie");
+    string SessionId = http::GetCookie(Cookies, "session_id");
+    
+    if (Sessions.IsSessionExist(SessionId)) {
         mServer.send(hdl, ALIVE, websocketpp::frame::opcode::text);
         mClientList.insert(hdl);
     }
@@ -84,10 +81,18 @@ void CHttpServer::OnMessage(websocketpp::connection_hdl hdl, WSServer::message_p
     string Message = msg->get_payload();
     cout << "OnMessage, message length: " << Message.length() << endl;
 
-    for (size_t i=0; i<Message.length()/SAMPLE_SIZE; ++i) {
-        CAudioSample::Ptr pSample (new CAudioSample());
-        memcpy(pSample->buf, Message.data()+(i*SAMPLE_SIZE), SAMPLE_SIZE);
-        Audio.Push(pSample);
+    // Get session id
+    WSServer::connection_ptr ConnectionPtr = mServer.get_con_from_hdl(hdl);
+    WSRequest Request = ConnectionPtr->get_request();
+    string Cookies = Request.get_header("Cookie");
+    string SessionId = http::GetCookie(Cookies, "session_id");
+
+    if (!SessionId.empty() && Audio.SetOwner(SessionId, true)) {
+        for (size_t i=0; i<Message.length()/SAMPLE_SIZE; ++i) {
+            CAudioSample::Ptr pSample (new CAudioSample());
+            memcpy(pSample->buf, Message.data()+(i*SAMPLE_SIZE), SAMPLE_SIZE);
+            Audio.Push(pSample);
+        }
     }
 }
 
@@ -140,10 +145,10 @@ void CHttpServer::OnHttp(websocketpp::connection_hdl hdl) {
             bOk = true;
         }
     }
-    if (!mPassword.empty() && MimeType.empty() && "/password" == Uri) {
+    if (MimeType.empty() && "/password" == Uri) {
         if (http::method::POST == Method) {
             string password = Request.get_body();
-            if (password == mPassword) {
+            if (mPassword.empty() || password == mPassword) {
                 SessionId = Sessions.CreateSession();
                 ConnectionPtr->append_header("Set-Cookie", "session_id=" + SessionId + "; Max-Age=31536000");
                 ConnectionPtr->set_body("Password OK");

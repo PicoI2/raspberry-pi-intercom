@@ -358,8 +358,6 @@ angular.module("ngApp", [])
 
     // At statup, load saved password
     me.password = localStorage.getItem("password");
-    if (me.password) {
-        me.bPasswordSaved = true;
-        me.sendPassword(false);
-    }
+    me.bPasswordSaved = true;
+    me.sendPassword(false);
 });

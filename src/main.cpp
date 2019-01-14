@@ -95,6 +95,9 @@ void CMain::Start ()
         return OnRequest(aHttpRequest);
     });
 
+    // Init Audio
+    Audio.Init();
+
     // Start boost
     cout << "Run boost service" << endl;
     mIoService.run();
@@ -151,6 +154,7 @@ void CMain::OnMessage (const string aMessage) {
         }
         else if (string::npos != aMessage.find("hangup")) {
             Audio.Stop();
+            Audio.SetOwner("udp", false);
         }
         else if (string::npos != aMessage.find("dooropen")) {
             IO.SetOutput(mOutputDoorOpen, true, 2000);
@@ -172,7 +176,8 @@ void CMain::OnMessage (const string aMessage) {
 // When an HTTP Request does not concern a file
 string CMain::OnRequest (const WSRequest& aHttpRequest) {
     bool bPasswordOk = Config.GetString("password", false).empty();
-    bPasswordOk = bPasswordOk || Sessions.IsSessionExist(http::GetCookie(aHttpRequest.get_header("Cookie"), "session_id"));
+    string SessionId = http::GetCookie(aHttpRequest.get_header("Cookie"), "session_id");
+    bPasswordOk = bPasswordOk || Sessions.IsSessionExist(SessionId);
     string Result;
     
     if (aHttpRequest.get_method() == http::method::GET) {
@@ -187,6 +192,9 @@ string CMain::OnRequest (const WSRequest& aHttpRequest) {
         }
         else if ("/password_ok" == aHttpRequest.get_uri()) {
             Result = bPasswordOk ? "true" : "false";
+        }
+        else if ("/audiobusy" == aHttpRequest.get_uri()) {
+            Result = Audio.GetOwner().empty() ? "false" : "true";
         }
         else if (!bPasswordOk) {
             Result = "Wrong password";
@@ -213,6 +221,7 @@ string CMain::OnRequest (const WSRequest& aHttpRequest) {
             else if ("/hangup" == aHttpRequest.get_uri()) {
                 Ring.Stop();
                 Audio.Stop();
+                Audio.SetOwner(SessionId, false);
                 Result = "OK";
             }
         }

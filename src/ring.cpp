@@ -1,5 +1,6 @@
 #include "ring.h"
 #include "config.h"
+#include "audio.h"
 
 #include <iostream>
 #include <fstream>
@@ -11,6 +12,7 @@ CRing Ring;
 void CRing::Start()
 {
     if (!mbPlaying) {
+        Audio.AudioOnOff(true);
         mbPlaying = true;
         mThread = thread ([this](){
             Thread();
@@ -154,6 +156,7 @@ void CRing::Thread()
     }
     
     fclose(pFile);
+    Audio.AudioOnOff(false);
     mbPlaying = false;
 }
 

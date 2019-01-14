@@ -2,6 +2,7 @@
 #include "udp.h"
 #include "httpserver.h"
 #include "config.h"
+#include "io.h"
 
 #include <alsa/asoundlib.h>
 #include <stdio.h>
@@ -9,11 +10,37 @@
 
 CAudio Audio;
 
+// Initialization
+void CAudio::Init()
+{
+    mNbAudioUser = 0;
+    mOutputAudioOn = Config.GetULong("output-audio-on", false);
+    if (mOutputAudioOn) {
+        IO.AddOutput(mOutputAudioOn, false);
+    }
+}
+
+// Set audio output on/off
+void CAudio::AudioOnOff (bool abOn)
+{
+    if (mOutputAudioOn) {
+        if (abOn) {
+            ++mNbAudioUser;
+        }
+        else {
+            --mNbAudioUser;
+        }
+        assert (mNbAudioUser >= 0 && mNbAudioUser <= 2);
+        IO.SetOutput(mOutputAudioOn, mNbAudioUser > 0);
+    }
+}
+
 // Start play thread
 void CAudio::Play()
 {
     if (!mbPlay) {
         mbPlay = true;
+        AudioOnOff(true);
         mPlayThread = thread ([this](){
             PlayThread();
         });
@@ -110,6 +137,8 @@ void CAudio::PlayThread()
 
     snd_pcm_drain(pcm_handle);
     snd_pcm_close(pcm_handle);
+
+    AudioOnOff(false);
 }
 
 // Start record thread
@@ -239,4 +268,19 @@ void CAudio::Stop()
     }
     mMutexQueue.unlock();
     cout << "Audio stopped" << endl;
+}
+
+// Set owner for audio from distant to local speaker.
+// This is to manage case where 2 user answer in the same time
+// Return true if succeed, false if an user owns already audio canal
+bool CAudio::SetOwner (string aOwner, bool bWantToOwn)
+{
+    if (mOwner.empty() && bWantToOwn) {
+        mOwner = aOwner;
+    }
+    bool bRes = (aOwner == mOwner);
+    if (bRes && !bWantToOwn) {
+        mOwner.clear();
+    }
+    return bRes;
 }
