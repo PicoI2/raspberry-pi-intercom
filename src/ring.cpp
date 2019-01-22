@@ -9,8 +9,16 @@
 
 CRing Ring;
 
+void CRing::Init(boost::asio::io_service* apIoService)
+{
+    mpInterval = new boost::posix_time::millisec(30000); // 30 seconds
+    mpTimer = new boost::asio::deadline_timer(*apIoService);
+}
+
 void CRing::Start()
 {
+    mpTimer->expires_from_now(*mpInterval);
+    mpTimer->async_wait([this](const boost::system::error_code&){OnTimer();});
     if (!mbPlaying) {
         Audio.AudioOnOff(true);
         mbPlaying = true;
@@ -84,8 +92,7 @@ void CRing::Thread()
 
     size_t StartPos = ftell (pFile);
     unsigned int seconds = (chunkLen) / rate / channels / bytesPerSample;
-    unsigned int nbPlay = (60/seconds) + 1; // Will ring for approximately 1 minute
-    while (bOk && mbPlaying && nbPlay--) {
+    while (bOk && mbPlaying) {
         fseek(pFile, StartPos, SEEK_SET);
         unsigned int err;
 
@@ -158,6 +165,11 @@ void CRing::Thread()
     fclose(pFile);
     Audio.AudioOnOff(false);
     mbPlaying = false;
+}
+
+void CRing::OnTimer()
+{
+    Stop();
 }
 
 void CRing::Stop()

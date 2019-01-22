@@ -97,6 +97,7 @@ void CMain::Start ()
 
     // Init Audio
     Audio.Init();
+    Ring.Init(&mIoService);
 
     // Start boost
     cout << "Run boost service" << endl;
@@ -147,10 +148,12 @@ void CMain::OnMessage (const string aMessage) {
     if (!mbClientMode) {    // If server
         if (string::npos != aMessage.find("record")) {
             Audio.Record();
+            Ring.Stop();
         }
         else if (string::npos != aMessage.find("play")) {
             Audio.Record();
             Audio.Play();
+            Ring.Stop();
         }
         else if (string::npos != aMessage.find("hangup")) {
             Audio.Stop();
@@ -238,7 +241,7 @@ string CMain::OnRequest (const WSRequest& aHttpRequest) {
             }
             else if ("/startspeaking" == aHttpRequest.get_uri()) {
                 Ring.Stop();
-                Udp.Send("record");
+                Udp.Send("play");
                 Audio.Play();
                 Audio.Record();
                 Result = "OK";
