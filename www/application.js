@@ -80,6 +80,10 @@ angular.module("ngApp", [])
             if ("doorbell" == msg.data) {
                 me.ring();
             }
+            else if ("audiobusy" == msg.data || "audiofree" == msg.data) {
+                me.checkAudioBusy();
+                $scope.$apply();
+            }
             else if ("alive" == msg.data) {
                 // me.ws.send("alive"); TODO ADD life message from client to server
                 me.relaunchTimeout();
@@ -360,4 +364,20 @@ angular.module("ngApp", [])
     me.password = localStorage.getItem("password");
     me.bPasswordSaved = true;
     me.sendPassword(false);
+
+    // Check if audio canal is busy
+    me.checkAudioBusy = function () {
+        console.log("checkAudioBusy...");
+        $http.get("/audiobusy").then(
+            function (response) {
+                me.bAudioBusy = ("true" == response.data);
+            },
+            function (response) {
+                me.bAudioBusy = false;
+            }
+        );
+    }
+    // At startup, check if audio is busy
+    me.checkAudioBusy();
+    
 });

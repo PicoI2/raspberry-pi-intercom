@@ -277,10 +277,12 @@ bool CAudio::SetOwner (string aOwner, bool bWantToOwn)
 {
     if (mOwner.empty() && bWantToOwn) {
         mOwner = aOwner;
+        HttpServer.SendMessage("audiobusy");
     }
     bool bRes = (aOwner == mOwner);
     if (bRes && !bWantToOwn) {
         mOwner.clear();
+        HttpServer.SendMessage("audiofree");
     }
     return bRes;
 }

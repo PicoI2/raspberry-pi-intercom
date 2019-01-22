@@ -13,10 +13,10 @@
     <span ng-style="{'color': ctrl.message.color}">{{ctrl.message.text}}</span><br>
     <div class="big-buttons">
         <button ng-click="ctrl.stopring(true)"><span class="glyphicon">&#xe123; </span>Stop ringing</button>
-        <button ng-click="ctrl.listen(true)"><span class="glyphicon">&#xe035; </span>Listen</button>
-        <button ng-click="ctrl.speak(true)"><span class="glyphicon">&#xe038; </span>Speak</button>
+        <button ng-click="ctrl.listen(true)" ng-disabled="ctrl.listening"><span class="glyphicon">&#xe035; </span>Listen</button>
+        <button ng-click="ctrl.speak(true)" ng-disabled="ctrl.recording "><span class="glyphicon">&#xe038; </span>Speak</button>
         <button ng-click="ctrl.dooropen(true)"><span class="glyphicon">&#xe013; </span>Open door</button>
-        <button ng-click="ctrl.hangup(true)"><span class="glyphicon">&#xe036; </span>Hangup</button>
+        <button ng-click="ctrl.hangup(true)" ng-disabled="!ctrl.listening && !ctrl.recording"><span class="glyphicon">&#xe036; </span>Hangup</button>
     </div>
     <br><br>
     <span ng-style="{'color': ctrl.bPasswordOk ? 'green' : 'red'}">Password: </span> <input type="password" ng-model="ctrl.password">

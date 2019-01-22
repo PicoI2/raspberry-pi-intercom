@@ -13,19 +13,19 @@ body {
 }
 .big-buttons {
     display: flex;
-    height: 16%;
+    height: 18%;
     justify-content: space-around;
     align-items: stretch;
 }
 .big-buttons > button {
-    font-size: 1.5vw;
+    font-size: 2vw;
     flex-basis: 19%;
     flex-shrink: 1;
     white-space: nowrap;
 }
 .big-buttons > button > .glyphicon {
     display: block;
-    font-size: 3vw;
+    font-size: 5vw;
 }
 .video {
     width: 96%;
