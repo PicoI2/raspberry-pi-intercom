@@ -8,7 +8,7 @@
     <script src="angular.1.7.4.min.js"></script>
     <script src="application.js"></script>
 </head>
-<body ng-controller="intercomController as ctrl">
+<body ng-controller="intercomController as ctrl" no-drag-drop>
     <img class="video" src="{{ctrl.videoSrc}}"><br>
     <span ng-style="{'color': ctrl.message.color}">{{ctrl.message.text}}</span><br>
     <div class="big-buttons">

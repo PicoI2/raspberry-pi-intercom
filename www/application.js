@@ -1,5 +1,6 @@
-angular.module("ngApp", [])
-.controller("intercomController", function ($http, $timeout, $scope) {
+const ngApp = angular.module("ngApp", []);
+
+ngApp.controller("intercomController", function ($http, $timeout, $scope) {
     let me = this;
     me.recvQueue = [];
     me.sendQueue = [];
@@ -379,5 +380,18 @@ angular.module("ngApp", [])
     }
     // At startup, check if audio is busy
     me.checkAudioBusy();
-    
+});
+
+// Création d'une directive autoFontSize
+ngApp.directive('noDragDrop', function () {
+    return {
+        restrict: 'A',
+        link: function (scope, element, attrs) {
+            element.bind("dragstart", function(event) {
+                console.log("dragstart");
+                event.preventDefault();
+                event.stopPropagation();
+            });
+        }
+    }; 
 });

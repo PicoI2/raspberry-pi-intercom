@@ -205,7 +205,6 @@ string CMain::OnRequest (const WSRequest& aHttpRequest) {
         // All case below this line works only if bPasswordOk
         else if (!mbClientMode) {    // If server
             if ("/startlisten" == aHttpRequest.get_uri()) {
-                Ring.Stop();
                 Audio.Record();
                 Result = "OK";
             }
