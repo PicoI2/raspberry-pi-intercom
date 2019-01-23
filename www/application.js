@@ -20,7 +20,7 @@ ngApp.controller("intercomController", function ($http, $timeout, $scope) {
 
     // Read configuration and then start websocket if needed
     $http.get("/config").then(
-        function (response) {
+        (response) => {
             const config = response.data;
             console.log(config);
             if (response.data) {
@@ -36,44 +36,44 @@ ngApp.controller("intercomController", function ($http, $timeout, $scope) {
                 }
             }
         },
-        function (response) {
+        (response) => {
             me.message.text = "Failed to read configuration";
             me.message.color = "red";
         }
     );
 
     // Simple http get function without waiting for result
-    me.get = function (msg) {
+    me.get = (msg) => {
         $http.get(msg).then(
-            function (response){
+            (response) => {
                 console.log(`get ${msg} OK`);
             }, 
-            function (response){
+            (response) => {
                 console.log(`get ${msg} failed`);
             }
         );
     };
 
     // Websocket
-    const onopen = function () {
+    function onopen () {
         console.log('websocket onopen');
         me.message.text = "Connected to server";
         me.message.color = "green";
         me.wsConnected = true;
         $scope.$apply();
     };
-    const onclose = function () {
+    function onclose () {
         console.log('websocket onclose');
         me.message.text = "Disconnected from server";
         me.message.color = "red";
         me.hangup(false);
         $scope.$apply();
         // Try to reconnect in 5 seconds
-        $timeout(function () {
+        $timeout(() => {
             me.ws = connect();
         }, 5000);
     };
-    const onmessage = function (msg) {
+    function onmessage (msg) {
         // console.log(typeof msg.data);
         // console.log(msg.data);
         if ("string" == typeof msg.data) {
@@ -93,7 +93,7 @@ ngApp.controller("intercomController", function ($http, $timeout, $scope) {
         else if (me.listening) {
             const fileReader = new FileReader();
             // onloadend will be called once readAsArrayBuffer has finished
-            fileReader.onloadend = function () {
+            fileReader.onloadend = () => {
                 // Convert from int to float
                 let sampleIntArray = new Int16Array(fileReader.result);
                 let sampleFloatArray = new Float32Array(sampleIntArray.length);
@@ -110,11 +110,11 @@ ngApp.controller("intercomController", function ($http, $timeout, $scope) {
                     }
                     source.connect(offlineCtx.destination);
                     source.start();
-                    offlineCtx.startRendering().then(function(renderedBuffer) {
+                    offlineCtx.startRendering().then((renderedBuffer) => {
                         for (let i=0; i<renderedBuffer.length; ++i) {
                             me.recvQueue.push(renderedBuffer.getChannelData(0)[i]);
                         }
-                    }).catch(function(err) {
+                    }).catch((err) => {
                         console.log('Rendering failed: ' + err);
                     });
                 }
@@ -128,10 +128,10 @@ ngApp.controller("intercomController", function ($http, $timeout, $scope) {
             fileReader.readAsArrayBuffer(msg.data);
         }
     };
-    const onerror = function () {
+    function onerror () {
         console.log('websocket onerror');
     };
-    const connect = function () {
+    function connect () {
         const wsurl = window.location.origin.replace("http", "ws");
         console.log('connect to ', wsurl);
         const w = new WebSocket(wsurl);
@@ -143,11 +143,11 @@ ngApp.controller("intercomController", function ($http, $timeout, $scope) {
     };
 
     // websocket life message and timeout
-    me.relaunchTimeout = function () {
+    me.relaunchTimeout = () => {
         if (me.timeout) {
             $timeout.cancel(me.timeout);
         }
-        me.timeout = $timeout(function () {
+        me.timeout = $timeout(() => {
             console.log("Websocket timeout");
             me.wsConnected = false;
             me.ws.close();  // Close socket to force reconnection
@@ -155,21 +155,21 @@ ngApp.controller("intercomController", function ($http, $timeout, $scope) {
     }
 
     // Bip
-    me.bip = function () {
+    me.bip = () => {
         if (me.audioBip) me.audioBip.pause();
         me.audioBip = new Audio("bip.mp3");
         me.audioBip.play();
     }
 
     // Ring (server mode only)
-    me.ring = function () {
+    me.ring = () => {
         if (me.audioRing) me.audioRing.pause();
         me.audioRing = new Audio("ring.wav");
         me.audioRing.play();
     };
 
     // Stop ring
-    me.stopring = function () {
+    me.stopring = () => {
         console.log("Stop ring...");
         me.bip();
         if (!me.mbModeClient) {
@@ -181,7 +181,7 @@ ngApp.controller("intercomController", function ($http, $timeout, $scope) {
     };
     
     // Listen
-    me.listen = function (bip) {
+    me.listen = (bip) => {
         console.log("Listen...");
         if (bip) {
             me.bip();
@@ -198,7 +198,7 @@ ngApp.controller("intercomController", function ($http, $timeout, $scope) {
             }
             me.audioProcess = me.audioContext.createScriptProcessor(me.frameBySample, 1, 1);
             me.audioProcess.connect(me.audioContext.destination);
-            me.audioProcess.onaudioprocess = function(e) {
+            me.audioProcess.onaudioprocess = (e) => {
                 // console.log("play...:");
                 for (let i=0; i<e.outputBuffer.length && me.recvQueue.length > 0; ++i) {
                     e.outputBuffer.getChannelData(0)[i] = me.recvQueue.shift();
@@ -212,7 +212,7 @@ ngApp.controller("intercomController", function ($http, $timeout, $scope) {
     };
 
     // Speak
-    me.speak = function (bip) {
+    me.speak = (bip) => {
         console.log("Speak...");
         if (bip) {
             me.bip();
@@ -225,14 +225,14 @@ ngApp.controller("intercomController", function ($http, $timeout, $scope) {
                 me.source = me.audioContext.createMediaStreamSource(stream);
                 me.source.connect(me.audioProcess);
                 me.recording = true;
-            }).catch(function(err) {
+            }).catch((err) => {
                 console.log("getUserMedia error: ", err);
             });
         }
     };
 
     // Convert buffer from float to int and send it on websocket
-    me.sendBuffer = function (inputBuffer) {
+    me.sendBuffer = (inputBuffer) => {
         if (me.audioContext.sampleRate != me.rate) {
             // Convert rate
             const offlineCtx = new OfflineAudioContext (1, me.frameBySample / (me.audioContext.sampleRate / me.rate), me.rate);
@@ -242,7 +242,7 @@ ngApp.controller("intercomController", function ($http, $timeout, $scope) {
             source.connect(offlineCtx.destination);
             // console.log('Start rendering...');
             source.start();
-            offlineCtx.startRendering().then(function(renderedBuffer) {
+            offlineCtx.startRendering().then((renderedBuffer) => {
                 // console.log('Rendering completed successfully');
                 buffer = renderedBuffer.getChannelData(0)
                 for (let i=0; i<buffer.length; ++i) {
@@ -253,7 +253,7 @@ ngApp.controller("intercomController", function ($http, $timeout, $scope) {
                         me.sendQueue = []; // Empty me.sendQueue
                     }
                 }
-            }).catch(function(err) {
+            }).catch((err) => {
                 console.log('Rendering failed: ' + err);
             });
         }
@@ -268,7 +268,7 @@ ngApp.controller("intercomController", function ($http, $timeout, $scope) {
     };
 
     // Open door
-    me.dooropen = function (bip) {
+    me.dooropen = (bip) => {
         if (bip) {
             me.bip();
         }
@@ -277,7 +277,7 @@ ngApp.controller("intercomController", function ($http, $timeout, $scope) {
     };
 
     // Hangup
-    me.hangup = function (bip) {
+    me.hangup = (bip) => {
         if (bip) {
             me.bip();
         }
@@ -301,7 +301,7 @@ ngApp.controller("intercomController", function ($http, $timeout, $scope) {
     // List availables "input devices". Useful for chrome but not for firefox
     me.devices = [];
     navigator.mediaDevices.enumerateDevices().then((devices) => {
-        devices.forEach (function (device) {
+        devices.forEach ((device) => {
             if (device.kind == "audioinput" && device.deviceId != "default") {
                 me.devices.push(device);
             }
@@ -314,13 +314,13 @@ ngApp.controller("intercomController", function ($http, $timeout, $scope) {
     });
 
     // Save deivceID in localStorage
-    me.saveDeviceId = function () {
+    me.saveDeviceId = () => {
         localStorage.setItem("deviceId", me.deviceId);
         console.log("me.deviceId:", me.deviceId);
     };
 
     // Send password to server
-    me.sendPassword = async function (bip) {
+    me.sendPassword = async (bip) => {
         if (bip) {
             me.bip();
         }
@@ -329,7 +329,7 @@ ngApp.controller("intercomController", function ($http, $timeout, $scope) {
     }
 
     // Save password to local storage for next time
-    me.savePassword = function (bip) {
+    me.savePassword = (bip) => {
         if (bip) {
             me.bip();
         }
@@ -338,7 +338,7 @@ ngApp.controller("intercomController", function ($http, $timeout, $scope) {
     }
 
     // Clear password from local storage
-    me.disconnect = async function (bip) {
+    me.disconnect = async (bip) => {
         if (bip) {
             me.bip();
         }
@@ -349,13 +349,13 @@ ngApp.controller("intercomController", function ($http, $timeout, $scope) {
     }
 
     // Check if password is OK
-    me.checkPassword = function () {
+    me.checkPassword = () => {
         console.log("checkPassword...");
         $http.get("/password_ok").then(
-            function (response) {
+            (response) => {
                 me.bPasswordOk = ("true" == response.data);
             },
-            function (response) {
+            (response) => {
                 me.bPasswordOk = false;
             }
         );
@@ -367,13 +367,13 @@ ngApp.controller("intercomController", function ($http, $timeout, $scope) {
     me.sendPassword(false);
 
     // Check if audio canal is busy
-    me.checkAudioBusy = function () {
+    me.checkAudioBusy = () => {
         console.log("checkAudioBusy...");
         $http.get("/audiobusy").then(
-            function (response) {
+            (response) => {
                 me.bAudioBusy = ("true" == response.data);
             },
-            function (response) {
+            (response) => {
                 me.bAudioBusy = false;
             }
         );
@@ -386,8 +386,8 @@ ngApp.controller("intercomController", function ($http, $timeout, $scope) {
 ngApp.directive('noDragDrop', function () {
     return {
         restrict: 'A',
-        link: function (scope, element, attrs) {
-            element.bind("dragstart", function(event) {
+        link: (scope, element, attrs) => {
+            element.bind("dragstart", (event) => {
                 console.log("dragstart");
                 event.preventDefault();
                 event.stopPropagation();
