@@ -1,15 +1,6 @@
 # raspberry-pi-intercom
 All you need to make an intercom with raspberry pi.
 
-WARNING : THIS PROJECT IS NOT FINISHED YET.
-TODO
----------
-- Handle session in cookie
-- Add password
-- Turn screen on and off in client raspberry pi
-- Allow user to select input and output
-- Store selected input and output
-
 How does it works
 ---------
 This software configured in server mode, run on a raspberry pi, with at least a button, a microphone and a speaker.<br>
@@ -27,13 +18,19 @@ Dependencies
 - Boost
 - Alsa
 - websocketpp
+- Jsoncpp
+- ssl
+- uuid
 
 Compilation
 ---------
 ```Shell
 sudo apt install cmake
-sudo apt install libboost-filesystem-dev
+sudo apt install libboost-system-dev
 sudo apt install libwebsocketpp-dev
+sudo apt install libjsoncpp-dev
+sudo apt install libssl-dev
+sudo apt install uuid-dev
 git clone https://github.com/PicoI2/raspberry-pi-intercom
 cd raspberry-pi-intercom
 cmake .
@@ -42,12 +39,45 @@ make
 
 How to use it
 ---------
-Modify the config-server.cfg file to match your configuration.<br>
+Copy and modify the config-server.cfg or config-client.cfg file to match your configuration.<br>
 If using port below 1024 dont forget to do : "sudo setcap 'cap_net_bind_service=+ep' rpi-intercom"<br>
 Then run
 ```Shell
 ./rpi-intercom config-server.cfg
 ```
+
+Configuration
+---------
+- mode (both)
+server (outside) or client (inside)
+- local-udp-port (both)
+udp receive port for communicating with client/server
+- client-ip (server)
+- client-udp-port (server)
+- http-port (both)
+- pushsafer-key (server)
+- pushsafer-device (server)
+- input-ringbell (server)
+ringbell button input
+- output-door-open (server)
+output to open door (connect it to a relay)
+- output-audio-on (both)
+output to enable audio
+- sound-card-play (both)
+aplay -l to list available cards
+- sound-card-rec (both)
+arecord -l to list available cards, could be 'default', 'plughw:1'
+- password (both)
+password to use web interface
+- server-ip (client)
+- server-udp-port (client)
+- input-stop-ring (client)
+- input-listen (client)
+- input-speak (client)
+- input-open-door (client)
+- input-hangup (client)
+- output-backlight-on (client)
+output to put screen backlight on
 
 HTTPS
 ---------
@@ -108,3 +138,9 @@ To start motion at startup, edit the file /etc/default/motion
 start_motion_daemon=yes
 ```
 
+Pushsafer https://www.pushsafer.com/
+---------
+<a href="https://www.pushsafer.com/">https://www.pushsafer.com/</a>
+Pushsafer allow you to receive notification on your phone.<br>
+It's not free but cheap, with only 1$ you can receive 1000 notifications.<br>
+But I would like to find another solution because it's not always very fast.<br>
