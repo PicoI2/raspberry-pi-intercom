@@ -138,7 +138,7 @@ To start motion at startup, edit the file /etc/default/motion
 start_motion_daemon=yes
 ```
 
-Pushsafer https://www.pushsafer.com/
+Pushsafer
 ---------
 <a href="https://www.pushsafer.com/">https://www.pushsafer.com/</a>
 Pushsafer allow you to receive notification on your phone.<br>
