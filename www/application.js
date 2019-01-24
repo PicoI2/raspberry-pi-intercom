@@ -187,9 +187,9 @@ ngApp.controller("intercomController", function ($http, $timeout, $scope) {
             me.bip();
         }
         me.get('/startlisten');
+        me.listening = true;
         if (!me.mbModeClient) {
             if (me.audioRing) me.audioRing.pause();
-            me.listening = true;
             if (!me.audioContext) {
                 me.audioContext = new AudioContext({
                     sampleRate: me.rate,
@@ -218,13 +218,13 @@ ngApp.controller("intercomController", function ($http, $timeout, $scope) {
             me.bip();
         }
         me.get('/startspeaking');
+        me.recording = true;
         me.listen(false);
         if (!me.mbModeClient) {
             if (me.audioRing) me.audioRing.pause();
             navigator.mediaDevices.getUserMedia({ audio: {sampleRate: me.rate, channelCount: 1, echoCancellation: true, deviceId: me.deviceId} }).then( function(stream) {
                 me.source = me.audioContext.createMediaStreamSource(stream);
                 me.source.connect(me.audioProcess);
-                me.recording = true;
             }).catch((err) => {
                 console.log("getUserMedia error: ", err);
             });
@@ -286,14 +286,14 @@ ngApp.controller("intercomController", function ($http, $timeout, $scope) {
         me.get('/hangup');
 
         // Stop audio process
-        if (me.listening) {
+        if (me.listening && !me.mbModeClient) {
             me.audioProcess.disconnect(me.audioContext.destination);
-            me.listening = false;
         }
-        if (me.recording) {
+        me.listening = false;
+        if (me.recording && !me.mbModeClient) {
             me.source.disconnect(me.audioProcess);
-            me.recording = false;
         }
+        me.recording = false;
         me.recvQueue = [];
         me.sendQueue = [];
     };
@@ -382,7 +382,8 @@ ngApp.controller("intercomController", function ($http, $timeout, $scope) {
     me.checkAudioBusy();
 });
 
-// Création d'une directive autoFontSize
+// Prefent drag and drop wich can be annoying on touch screen
+// Turn screen backlight on
 ngApp.directive('noDragDrop', function () {
     return {
         restrict: 'A',
@@ -391,6 +392,10 @@ ngApp.directive('noDragDrop', function () {
                 console.log("dragstart");
                 event.preventDefault();
                 event.stopPropagation();
+                scope.ctrl.get("/backlighton");
+            });
+            element.bind("click", (event) => {
+                scope.ctrl.get("/backlighton");
             });
         }
     }; 

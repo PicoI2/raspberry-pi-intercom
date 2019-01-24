@@ -84,6 +84,12 @@ void CMain::Start ()
         if (mInputHangup) {
             IO.AddInput(mInputHangup);
         }
+
+        mOutputBacklightOn = Config.GetULong("output-backlight-on", false);
+        if (mOutputBacklightOn) {
+            IO.AddOutput(mOutputBacklightOn, false);
+            BacklightOn ();
+        }
     }
     IO.InputSignal.connect([=](const int aGpio, const bool abValue){
         OnInput(aGpio, abValue);
@@ -117,6 +123,7 @@ void CMain::OnInput (const int aGpio, const bool abValue) {
         }
     }
     else {  // If client
+        BacklightOn();
         if (mInputStopRing == aGpio) {
             Ring.Stop();
         }
@@ -167,6 +174,7 @@ void CMain::OnMessage (const string aMessage) {
         }
     }
     else {  // If client
+        BacklightOn();
         if (string::npos != aMessage.find("doorbell")) {
             Ring.Start();
         }
@@ -199,10 +207,14 @@ string CMain::OnRequest (const WSRequest& aHttpRequest) {
         else if ("/audiobusy" == aHttpRequest.get_uri()) {
             Result = Audio.GetOwner().empty() ? "false" : "true";
         }
+        else if ("/backlighton" == aHttpRequest.get_uri()) {
+            BacklightOn();
+            Result = "OK";
+        }
+        // All case after this one works only if bPasswordOk
         else if (!bPasswordOk) {
             Result = "Wrong password";
         }
-        // All case below this line works only if bPasswordOk
         else if (!mbClientMode) {    // If server
             if ("/startlisten" == aHttpRequest.get_uri()) {
                 Audio.Record();
@@ -271,4 +283,12 @@ void CMain::OnExit (const boost::system::error_code& error, int signal_number)
     Udp.Stop();
     Audio.Stop();
     exit(0);
+}
+
+// Turn on backlight for 1 minute
+void CMain::BacklightOn ()
+{
+    if (mOutputBacklightOn) {
+        IO.SetOutput(mOutputBacklightOn, 60000);
+    }
 }

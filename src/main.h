@@ -3,6 +3,8 @@
 class CMain {
 public:
     void Start ();
+    void BacklightOn ();
+    
 private:
     void OnInput (const int aGpio, const bool abValue);
     void OnMessage (const string aMessage);
@@ -22,6 +24,7 @@ private:
     long mInputSpeak;
     long mInputOpenDoor;
     long mInputHangup;
+    long mOutputBacklightOn;
 };
 
 extern CMain Main;
