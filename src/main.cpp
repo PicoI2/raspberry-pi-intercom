@@ -289,6 +289,6 @@ void CMain::OnExit (const boost::system::error_code& error, int signal_number)
 void CMain::BacklightOn ()
 {
     if (mOutputBacklightOn) {
-        IO.SetOutput(mOutputBacklightOn, 60000);
+        IO.SetOutput(mOutputBacklightOn, 1, 60000);
     }
 }

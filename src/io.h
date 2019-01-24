@@ -40,6 +40,9 @@ public :
     boost::posix_time::millisec* mpDebounce;
 
     map<int, CInput*> InputsMap;
+
+    typedef shared_ptr<boost::asio::deadline_timer> TimerPtr;
+    map<int, TimerPtr> OutputsTimers;
 };
 
 extern CIO IO;

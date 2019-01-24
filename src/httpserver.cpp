@@ -35,7 +35,11 @@ bool CHttpServer::Start(boost::asio::io_service* apIoService, int aPort)
 
         mpInterval = new boost::posix_time::millisec(30000); // 30 seconds
         mpTimer = new boost::asio::deadline_timer(*mpIoService, *mpInterval);
-        mpTimer->async_wait([this](const boost::system::error_code&){OnTimer();});
+        mpTimer->async_wait([this](const boost::system::error_code& error){
+            if (!error) {
+                OnTimer();
+            }
+        });
     }
 
     mPassword = Config.GetString("password", false);
@@ -188,7 +192,11 @@ void CHttpServer::OnTimer (void)
     // }
 
     mpTimer->expires_from_now(*mpInterval);
-    mpTimer->async_wait([this](const boost::system::error_code&){OnTimer();});
+    mpTimer->async_wait([this](const boost::system::error_code& error){
+        if (!error) {
+            OnTimer();
+        }
+    });
 }
 
 // On TLS init

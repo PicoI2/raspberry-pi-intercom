@@ -18,7 +18,11 @@ void CRing::Init(boost::asio::io_service* apIoService)
 void CRing::Start()
 {
     mpTimer->expires_from_now(*mpInterval);
-    mpTimer->async_wait([this](const boost::system::error_code&){OnTimer();});
+    mpTimer->async_wait([this](const boost::system::error_code& error){
+        if (!error) {
+            OnTimer();
+        }
+    });
     if (!mbPlaying) {
         Audio.AudioOnOff(true);
         mbPlaying = true;

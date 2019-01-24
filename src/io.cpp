@@ -17,7 +17,11 @@ bool CIO::Start (boost::asio::io_service* apIoService)
     mpInterval = new boost::posix_time::millisec(40);
     mpDebounce = new boost::posix_time::millisec(100);
     mpTimer = new boost::asio::deadline_timer(*mpIoService, *mpInterval);
-    mpTimer->async_wait([this](const boost::system::error_code&){OnTimer();});
+    mpTimer->async_wait([this](const boost::system::error_code& error){
+        if (!error) {
+            OnTimer();
+        }
+    });
 
     return true;
 }
@@ -123,7 +127,11 @@ void CIO::OnTimer (void)
     
     // Reschedule the timer in the future:
     mpTimer->expires_from_now(*mpInterval);
-    mpTimer->async_wait([this](const boost::system::error_code&){OnTimer();});
+    mpTimer->async_wait([this](const boost::system::error_code& error){
+        if (!error) {
+            OnTimer();
+        }
+    });
     // cout << "OnTimer END" << endl;
 }
 
@@ -143,7 +151,7 @@ bool CIO::AddOutput (int aGpio, bool abValue)
         if (DirectionFile.is_open()) {
             DirectionFile << "out";
             DirectionFile.close();
-
+            OutputsTimers[aGpio] = TimerPtr (new boost::asio::deadline_timer(*mpIoService));
             bRes = SetOutput(aGpio, abValue);
         }
     }
@@ -162,10 +170,11 @@ bool CIO::SetOutput (int aGpio, bool abValue, int aDurationMs)
         bRes = true;
         if (aDurationMs) {
             boost::posix_time::millisec Interval(aDurationMs);
-            shared_ptr<boost::asio::deadline_timer> pTimer (new boost::asio::deadline_timer(*mpIoService));
-            pTimer->expires_from_now(Interval);
-            pTimer->async_wait([this, pTimer, aGpio, abValue](const boost::system::error_code&) { // pTimer will be destroyed after the call of the lambda, because we capture it by value 
-                SetOutput(aGpio, !abValue);
+            OutputsTimers[aGpio]->expires_from_now(Interval);
+            OutputsTimers[aGpio]->async_wait([this, aGpio, abValue](const boost::system::error_code& error) {
+                if (!error) {
+                    SetOutput(aGpio, !abValue);
+                }
             });
         }
     }
