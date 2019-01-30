@@ -17,12 +17,17 @@ bool CUdp::Start (boost::asio::io_service* apIoService)
     mpSocket->set_option(udp::socket::reuse_address(true));
 
     if ("server" == Config.GetString("mode")) {
-        boost::asio::ip::address RemoteAddress = boost::asio::ip::address::from_string(Config.GetString("client-ip"));
-        mRemoteEndPoint = udp::endpoint(RemoteAddress, Config.GetULong("client-udp-port"));
+        string ClientIP = Config.GetString("client-ip", false);
+        if (!ClientIP.empty()) {
+            boost::asio::ip::address RemoteAddress = boost::asio::ip::address::from_string(ClientIP);
+            mRemoteEndPoint = udp::endpoint(RemoteAddress, Config.GetULong("client-udp-port"));
+            mbValidRemote = true;
+        }
     }
     else if ("client" == Config.GetString("mode")) {
         boost::asio::ip::address RemoteAddress = boost::asio::ip::address::from_string(Config.GetString("server-ip"));
         mRemoteEndPoint = udp::endpoint(RemoteAddress, Config.GetULong("server-udp-port"));
+        mbValidRemote = true;
     }
     
     StartListening();
@@ -62,10 +67,14 @@ void CUdp::ReceiveFrom (const boost::system::error_code& error, size_t bytes_tra
 
 void CUdp::Send (string aMessage)
 {
-    mpSocket->send_to(boost::asio::buffer(aMessage), mRemoteEndPoint);
+    if (mbValidRemote) {
+        mpSocket->send_to(boost::asio::buffer(aMessage), mRemoteEndPoint);
+    }
 }
 
 void CUdp::Send (char* aPacket, size_t aSize)
 {
-    mpSocket->send_to(boost::asio::buffer(aPacket, aSize), mRemoteEndPoint);
+    if (mbValidRemote) {
+        mpSocket->send_to(boost::asio::buffer(aPacket, aSize), mRemoteEndPoint);
+    }
 }

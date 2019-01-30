@@ -23,6 +23,7 @@ public :
     udp::endpoint mRemoteEndPoint;
     udp::endpoint mReceiveRemoteEndPoint;
     unsigned long mRemoteUdpPort;
+    bool mbValidRemote = false;
 };
 
 extern CUdp Udp;
