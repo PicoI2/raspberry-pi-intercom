@@ -30,6 +30,7 @@ bool CHttpServer::Start(boost::asio::io_service* apIoService, int aPort)
         #ifdef USE_HTTPS
         mServer.set_tls_init_handler([this] (auto hdl) {return this->OnTlsInit(hdl);});
         #endif
+        mServer.set_open_handshake_timeout(60000);  // Is also maximum timout to download a file
         mServer.listen(aPort);
         mServer.start_accept();
 
@@ -116,7 +117,6 @@ void CHttpServer::SendMessage (const char* aMessage, size_t aSize) {
 
 // On HTTP request
 void CHttpServer::OnHttp(websocketpp::connection_hdl hdl) {
-    cout << "OnHttp" << endl;
     WSServer::connection_ptr ConnectionPtr = mServer.get_con_from_hdl(hdl);
 
     // Read parsed request
@@ -127,26 +127,31 @@ void CHttpServer::OnHttp(websocketpp::connection_hdl hdl) {
     string SessionId = http::GetCookie(Cookies, "session_id");
     string MimeType = http::mime::GetMimeType(Uri);
 
+    cout << "OnHttp " << Uri << endl;
+
     // To redirect GET '/' to GET '/index.html'
     if (MimeType.empty() && http::method::GET == Method && "/" == Uri) {
         Uri = "/index.html";
         MimeType = http::mime::HTML;
     }
     
-    string Response;
     bool bOk = false;
     // Return requested file
     if (Method == http::method::GET && !MimeType.empty() && string::npos == Uri.find("..")) {
         ifstream RequestedFile("./www/" + Uri, ios::in | ios::binary);
         if (RequestedFile.is_open()) {
-            char buffer [1024];
-            while (RequestedFile.read(buffer, sizeof(buffer)).gcount() > 0) {
-                Response.append(buffer, RequestedFile.gcount());
-            }
+            RequestedFile.seekg(0, std::ios::end);
+            size_t Size = RequestedFile.tellg();
+            string Response(Size, ' ');
+            RequestedFile.seekg(0);
+            RequestedFile.read(&Response[0], Size); 
             ConnectionPtr->set_body(Response);
             ConnectionPtr->set_status(websocketpp::http::status_code::ok);
             ConnectionPtr->append_header("Content-Type", MimeType);
             bOk = true;
+        }
+        else {
+            cerr << "File not found" << endl;
         }
     }
     if (MimeType.empty() && "/password" == Uri) {

@@ -19,6 +19,7 @@ namespace http {
     }
     namespace mime {
         const static string JS      = "application/javascript";
+        const static string ZIP     = "application/zip";
         const static string MP3     = "audio/mpeg";
         const static string WAV     = "audio/wav";
         const static string TTF     = "font/ttf";

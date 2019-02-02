@@ -38,6 +38,7 @@ ExtensionToMime ExtensionsArray[] = {
     {"wav", WAV},
     {"woff", WOFF},
     {"woff2", WOFF2},
+    {"zip", ZIP},
 };
 
 string GetMimeType(string aUri)
