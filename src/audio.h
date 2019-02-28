@@ -5,6 +5,9 @@
 #include <thread>
 #include <queue>
 
+#include "speex/speex_echo.h"
+#include <alsa/asoundlib.h>
+
 using namespace std;
 
 #define RATE 22050  // Hz
@@ -30,17 +33,22 @@ public :
     string GetOwner () {return mOwner;};
     
 protected :
-    void PlayThread ();
-    thread mPlayThread;
+    void StartThread ();
+    void Thread ();
+    int  StartPcm (const char* aName, bool bRecord);
+    void StopPcm (bool bRecord);
+
+    thread mThread;
     atomic<bool> mbPlay;
-    void RecordThread ();
-    thread mRecordThread;
     atomic<bool> mbRecord;
     mutex mMutexQueue;
     queue<CAudioSample::Ptr> mSamplesQueue;
     long mOutputAudioOn;
     atomic<char> mNbAudioUser;
     string mOwner;
+    SpeexEchoState* mEchoState;
+    snd_pcm_t* mPlayPcmHandle;
+    snd_pcm_t* mRecordPcmHandle;
 };
 
 extern CAudio Audio;
