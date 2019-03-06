@@ -18,7 +18,11 @@ void CAudio::Init()
         IO.AddOutput(mOutputAudioOn, false);
     }
 
-    mEchoState = speex_echo_state_init(FRAME_SIZE, SAMPLE_SIZE);
+    mEchoState = speex_echo_state_init(FRAME_BY_SAMPLE, FRAME_BY_SAMPLE);
+    mPreprocessState = speex_preprocess_state_init(FRAME_BY_SAMPLE, RATE);
+    int SampleRate = RATE;
+    speex_echo_ctl(mEchoState, SPEEX_ECHO_SET_SAMPLING_RATE, &SampleRate);
+    speex_preprocess_ctl(mPreprocessState, SPEEX_PREPROCESS_SET_ECHO_STATE, mEchoState);
 }
 
 // Set audio output on/off
@@ -70,7 +74,7 @@ int CAudio::StartPcm(const char* aName, bool bRecord)
     int err;
         
     /* Open the PCM device in playback mode */
-    snd_pcm_t* PcmHandle = bRecord ? mRecordPcmHandle : mPlayPcmHandle;
+    snd_pcm_t* PcmHandle;
     if (err = snd_pcm_open(&PcmHandle, aName, bRecord ? SND_PCM_STREAM_CAPTURE : SND_PCM_STREAM_PLAYBACK, 0) < 0) {
         cerr << "ERROR: Can't open " << aName << " PCM device (" << snd_strerror (err) << ")" << endl;
     }
@@ -103,6 +107,14 @@ int CAudio::StartPcm(const char* aName, bool bRecord)
     if (err = snd_pcm_hw_params(PcmHandle, params) < 0) {
         cerr << "ERROR: Can't set hardware parameters (" << snd_strerror (err) << ")" << endl;
     }
+
+    if (bRecord) {
+        mRecordPcmHandle = PcmHandle;
+    }
+    else {
+        mPlayPcmHandle = PcmHandle;
+    }
+
     return err;
 }
 
@@ -141,20 +153,24 @@ void CAudio::Thread()
                 // Wait for samples
                 this_thread::sleep_for(chrono::milliseconds(1));
             }
-            else if (!mSamplesQueue.empty()) {
+            else while (!mSamplesQueue.empty()) {
                 // Play sample
                 mMutexQueue.lock();
                 pPlaySample = mSamplesQueue.front();
-                mSamplesQueue.pop();
                 mMutexQueue.unlock();
                 
                 if (err = snd_pcm_writei(mPlayPcmHandle, pPlaySample->buf, FRAME_BY_SAMPLE) == -EPIPE) {
                     cout << "XRUN " << endl;
-                    this_thread::sleep_for(chrono::milliseconds(80));
                     snd_pcm_prepare(mPlayPcmHandle);
+                    break;
                 } else if (err < 0) {
                     cerr << "ERROR. Can't write to PCM device (" << snd_strerror(err) << ")" << endl;
                     break;
+                }
+                else {
+                    mMutexQueue.lock();
+                    mSamplesQueue.pop();
+                    mMutexQueue.unlock();
                 }
             }
         }
@@ -165,9 +181,10 @@ void CAudio::Thread()
                 cerr << "read from audio interface failed (" << snd_strerror (err) << ")" << endl;
                 break;
             }
-            if (mbPlay) {
+            if (mbPlay && pPlaySample) {
                 CAudioSample::Ptr pSampleWithoutEcho (new CAudioSample());
                 speex_echo_cancellation(mEchoState, (spx_int16_t*)pSample->buf, (spx_int16_t*)pPlaySample->buf, (spx_int16_t*)pSampleWithoutEcho->buf);
+                speex_preprocess_run(mPreprocessState, (spx_int16_t*)pSampleWithoutEcho->buf);
                 pSample = pSampleWithoutEcho;
             }
             

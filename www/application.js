@@ -191,9 +191,7 @@ ngApp.controller("intercomController", function ($http, $timeout, $scope) {
         if (!me.mbModeClient) {
             if (me.audioRing) me.audioRing.pause();
             if (!me.audioContext) {
-                me.audioContext = new AudioContext({
-                    sampleRate: me.rate,
-                });
+                me.audioContext = new AudioContext();
                 console.log("me.audioContext:", me.audioContext);
             }
             me.audioProcess = me.audioContext.createScriptProcessor(me.frameBySample, 1, 1);
@@ -222,7 +220,7 @@ ngApp.controller("intercomController", function ($http, $timeout, $scope) {
         me.listen(false);
         if (!me.mbModeClient) {
             if (me.audioRing) me.audioRing.pause();
-            navigator.mediaDevices.getUserMedia({ audio: {sampleRate: me.rate, channelCount: 1, echoCancellation: true, deviceId: me.deviceId} }).then( function(stream) {
+            navigator.mediaDevices.getUserMedia({ audio: {channelCount: 1, echoCancellation: true, deviceId: me.deviceId} }).then( function(stream) {
                 me.source = me.audioContext.createMediaStreamSource(stream);
                 me.source.connect(me.audioProcess);
             }).catch((err) => {
