@@ -121,11 +121,12 @@ void CAudio::PlayThread()
             pSample = mSamplesQueue.front();
             mSamplesQueue.pop();
             mMutexQueue.unlock();
-            
+
             if (err = snd_pcm_writei(pcm_handle, pSample->buf, FRAME_BY_SAMPLE) == -EPIPE) {
                 cout << "XRUN " << endl;
                 this_thread::sleep_for(chrono::milliseconds(80));
                 snd_pcm_prepare(pcm_handle);
+                snd_pcm_writei(pcm_handle, pSample->buf, FRAME_BY_SAMPLE);
             } else if (err < 0) {
                 cerr << "ERROR. Can't write to PCM device (" << snd_strerror(err) << ")" << endl;
                 break;
