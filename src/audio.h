@@ -34,11 +34,15 @@ public :
     string GetOwner () {return mOwner;};
     
 protected :
+    int  StartPcm (const char* aName, bool bRecord);
+    void StopPcm (bool bRecord);
+    
     void PlayThread ();
-    thread mPlayThread;
-    atomic<bool> mbPlay;
     void RecordThread ();
+    
+    thread mPlayThread;
     thread mRecordThread;
+    atomic<bool> mbPlay;
     atomic<bool> mbRecord;
     mutex mMutexQueue;
     queue<CAudioSample::Ptr> mSamplesQueue;

@@ -51,6 +51,11 @@ void CAudio::AudioOnOff (bool abOn)
 void CAudio::Play()
 {
     if (!mbPlay) {
+        const char* name = Config.GetString("sound-card-play").c_str();
+        if ('\0' == name[0]) {
+            name = "default";
+        }
+        StartPcm(name, false);
         mbPlay = true;
         AudioOnOff(true);
         mPlayThread = thread ([this](){
@@ -73,50 +78,72 @@ void CAudio::Push (CAudioSample::Ptr apSample) {
     }
 }
 
-// Play thread
-void CAudio::PlayThread()
+int CAudio::StartPcm(const char* aName, bool bRecord)
 {
     int err;
         
     /* Open the PCM device in playback mode */
-    snd_pcm_t *pcm_handle;
-    const char* name = Config.GetString("sound-card-play").c_str();
-    if ('\0' == name[0]) {
-        name = "default";
-    }
-    
-    if (err = snd_pcm_open(&pcm_handle, name, SND_PCM_STREAM_PLAYBACK, 0) < 0) {
-        cerr << "ERROR: Can't open " << name << " PCM device (" << snd_strerror (err) << ")" << endl;
+    snd_pcm_t* PcmHandle;
+    if (err = snd_pcm_open(&PcmHandle, aName, bRecord ? SND_PCM_STREAM_CAPTURE : SND_PCM_STREAM_PLAYBACK, 0) < 0) {
+        cerr << "ERROR: Can't open " << aName << " PCM device (" << snd_strerror (err) << ")" << endl;
     }
 
     /* Allocate parameters object and fill it with default values*/
     snd_pcm_hw_params_t *params;
     snd_pcm_hw_params_alloca(&params);
-
-    snd_pcm_hw_params_any(pcm_handle, params);
+    snd_pcm_hw_params_any(PcmHandle, params);
 
     /* Set parameters */
-    if (err = snd_pcm_hw_params_set_access(pcm_handle, params, SND_PCM_ACCESS_RW_INTERLEAVED) < 0) {
+    if (err = snd_pcm_hw_params_set_access(PcmHandle, params, SND_PCM_ACCESS_RW_INTERLEAVED) < 0) {
         cerr << "ERROR: Can't set interleaved mode (" << snd_strerror (err) << ")" << endl;
     }
 
-    if (err = snd_pcm_hw_params_set_format(pcm_handle, params, SND_PCM_FORMAT_S16_LE) < 0) {
+    if (err = snd_pcm_hw_params_set_format(PcmHandle, params, SND_PCM_FORMAT_S16_LE) < 0) {
         cerr << "ERROR: Can't set format (" << snd_strerror (err) << ")" << endl;
     }
 
-    if (err = snd_pcm_hw_params_set_channels(pcm_handle, params, 1) < 0) {
+    if (err = snd_pcm_hw_params_set_channels(PcmHandle, params, 1) < 0) {
         cerr << "ERROR: Can't set channels number (" << snd_strerror (err) << ")" << endl;
     }
     unsigned int rate = RATE;
-    if (err = snd_pcm_hw_params_set_rate_near(pcm_handle, params, &rate, 0) < 0) {
+    if (err = snd_pcm_hw_params_set_rate_near(PcmHandle, params, &rate, 0) < 0) {
         cerr << "ERROR: Can't set rate (" << snd_strerror (err) << ")" << endl;
     }
 
     cout << "snd_pcm_hw_params_set_rate_near to:" << rate << endl;
 
     /* Write parameters */
-    if (err = snd_pcm_hw_params(pcm_handle, params) < 0)
+    if (err = snd_pcm_hw_params(PcmHandle, params) < 0) {
         cerr << "ERROR: Can't set hardware parameters (" << snd_strerror (err) << ")" << endl;
+    }
+
+    if (bRecord) {
+        mRecordPcmHandle = PcmHandle;
+    }
+    else {
+        mPlayPcmHandle = PcmHandle;
+    }
+
+    return err;
+}
+
+void CAudio::StopPcm(bool bRecord)
+{
+    snd_pcm_t* PcmHandle = bRecord ? mRecordPcmHandle : mPlayPcmHandle;
+    cout << "Stop playing" << endl;
+
+    snd_pcm_drain(PcmHandle);
+    snd_pcm_close(PcmHandle);
+
+    if (!bRecord) {
+        AudioOnOff(false);
+    }
+}
+
+// Play thread
+void CAudio::PlayThread()
+{
+    int err;
 
     CAudioSample::Ptr pSample;
 
@@ -134,11 +161,11 @@ void CAudio::PlayThread()
             mSamplesQueue.pop();
             mMutexQueue.unlock();
 
-            if (err = snd_pcm_writei(pcm_handle, pSample->buf, FRAME_BY_SAMPLE) == -EPIPE) {
+            if (err = snd_pcm_writei(mPlayPcmHandle, pSample->buf, FRAME_BY_SAMPLE) == -EPIPE) {
                 cout << "XRUN " << endl;
                 this_thread::sleep_for(chrono::milliseconds(80));
-                snd_pcm_prepare(pcm_handle);
-                snd_pcm_writei(pcm_handle, pSample->buf, FRAME_BY_SAMPLE);
+                snd_pcm_prepare(mPlayPcmHandle);
+                snd_pcm_writei(mPlayPcmHandle, pSample->buf, FRAME_BY_SAMPLE);
                 speex_echo_playback (mEchoState, (spx_int16_t*)pSample->buf);
             } else if (err < 0) {
                 cerr << "ERROR. Can't write to PCM device (" << snd_strerror(err) << ")" << endl;
@@ -152,17 +179,18 @@ void CAudio::PlayThread()
     }
 
     cout << "Stop playing" << endl;
-
-    snd_pcm_drain(pcm_handle);
-    snd_pcm_close(pcm_handle);
-
-    AudioOnOff(false);
+    StopPcm(false);
 }
 
 // Start record thread
 void CAudio::Record()
 {
     if (!mbRecord) {
+        const char* name = Config.GetString("sound-card-rec").c_str();
+        if ('\0' == name[0]) {
+            name = "default";
+        }
+        StartPcm(name, true);
         mbRecord = true;
         mRecordThread = thread ([this](){
             RecordThread();
@@ -174,87 +202,11 @@ void CAudio::Record()
 void CAudio::RecordThread()
 {
     int err;
-    snd_pcm_t *capture_handle;
-    snd_pcm_hw_params_t *hw_params;
-    snd_pcm_format_t format = SND_PCM_FORMAT_S16_LE;
-
-    const char* name = Config.GetString("sound-card-rec").c_str();
-    if ('\0' == name[0]) {
-        name = "default";
-    }
-    if ((err = snd_pcm_open (&capture_handle, name, SND_PCM_STREAM_CAPTURE, 0)) < 0) {
-        cerr << "cannot open audio device " << name << "(" << snd_strerror (err) << ")" << endl;
-        return;
-    }
-
-    cout << "audio interface opened" << endl;
-
-    if ((err = snd_pcm_hw_params_malloc (&hw_params)) < 0) {
-        cerr << "cannot allocate hardware parameter structure (" << snd_strerror (err) << ")" << endl;
-        return;
-    }
-
-    cout << "hw_params allocated" << endl;
-
-    if ((err = snd_pcm_hw_params_any (capture_handle, hw_params)) < 0) {
-        cerr << "cannot initialize hardware parameter structure (" << snd_strerror (err) << ")" << endl;
-        return;
-    }
-
-    cout << "hw_params initialized" << endl;
-
-    if ((err = snd_pcm_hw_params_set_access (capture_handle, hw_params, SND_PCM_ACCESS_RW_INTERLEAVED)) < 0) {
-        cerr << "cannot set access type (" << snd_strerror (err) << ")" << endl;
-        return;
-    }
-
-    cout << "hw_params access setted" << endl;
-
-    if ((err = snd_pcm_hw_params_set_format (capture_handle, hw_params, format)) < 0) {
-        cerr << "cannot set sample format (" << snd_strerror (err) << ")" << endl;
-        return;
-    }
-
-    cout << "hw_params format setted" << endl;
-    unsigned int rate = RATE;
-    if ((err = snd_pcm_hw_params_set_rate_near (capture_handle, hw_params, &rate, 0)) < 0) {
-        cerr << "cannot set sample rate (" << snd_strerror (err) << ")" << endl;
-        return;
-    }
-
-    cout << "hw_params rate setted to:" << rate << endl;
-
-    if ((err = snd_pcm_hw_params_set_channels (capture_handle, hw_params, 1)) < 0) {
-        cerr << "cannot set channel count (" << snd_strerror (err) << ")" << endl;
-        return;
-    }
-
-    cout << "hw_params channels setted" << endl;
-
-    if ((err = snd_pcm_hw_params (capture_handle, hw_params)) < 0) {
-        cerr << "cannot set parameters (" << snd_strerror (err) << ")" << endl;
-        return;
-    }
-
-    cout << "hw_params setted" << endl;
-
-    snd_pcm_hw_params_free (hw_params);
-
-    cout << "hw_params freed" << endl;
-
-    if ((err = snd_pcm_prepare (capture_handle)) < 0) {
-        cerr << "cannot prepare audio interface for use (" << snd_strerror (err) << ")" << endl;
-        return;
-    }
-
-    cout << "audio interface prepared" << endl;
-    cout << " snd_pcm_format_width(format) " <<  snd_pcm_format_width(format) << "bits" << endl;
-
     cout << "Start recording" << endl;
 
     while (mbRecord) {
         CAudioSample::Ptr pSample (new CAudioSample());
-        if ((err = snd_pcm_readi (capture_handle, pSample->buf, FRAME_BY_SAMPLE)) != FRAME_BY_SAMPLE) {
+        if ((err = snd_pcm_readi (mRecordPcmHandle, pSample->buf, FRAME_BY_SAMPLE)) != FRAME_BY_SAMPLE) {
             cerr << "read from audio interface failed (" << snd_strerror (err) << ")" << endl;
             break;
         }
@@ -269,9 +221,7 @@ void CAudio::RecordThread()
     }
 
     cout << "Stop recording" << endl;
-
-    snd_pcm_close (capture_handle);
-    cout << "audio interface closed" << endl;
+    StopPcm(true);
 }
 
 // Stop all audio threads
