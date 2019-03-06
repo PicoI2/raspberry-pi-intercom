@@ -11,14 +11,15 @@
 
 using namespace std;
 
-#define RATE 22050  // Hz
-#define FRAME_SIZE 2 // 16 bits
-#define SAMPLE_SIZE 4096
-#define FRAME_BY_SAMPLE (SAMPLE_SIZE / FRAME_SIZE)  // Must be a power of 2, MAX 16384
+#define RATE 22050       // Hz
+#define SAMPLE_SIZE 2    // 16 bits
+#define SAMPLE_BY_FRAME 256  // Must be a power of 2, MAX 16384, around 10ms so ~ RATE/10 = 220 => 256
+#define FRAME_SIZE (SAMPLE_BY_FRAME * SAMPLE_SIZE)
+#define FILTER_LENGTH (10*SAMPLE_BY_FRAME)   // Echo filter, should be around 100ms
 
-struct CAudioSample {
-    typedef shared_ptr<CAudioSample> Ptr;
-    char buf [SAMPLE_SIZE];
+struct CAudioFrame {
+    typedef shared_ptr<CAudioFrame> Ptr;
+    char buf [FRAME_SIZE];
 };
 
 class CAudio {
@@ -27,7 +28,7 @@ public :
     void Init ();
     void AudioOnOff (bool abOn);
     void Play ();
-    void Push (CAudioSample::Ptr apSample);
+    void Push (CAudioFrame::Ptr apFrame);
     void Record ();
     void Stop ();
     bool SetOwner (string aOwner, bool bWantToOwn);
@@ -45,7 +46,7 @@ protected :
     atomic<bool> mbPlay;
     atomic<bool> mbRecord;
     mutex mMutexQueue;
-    queue<CAudioSample::Ptr> mSamplesQueue;
+    queue<CAudioFrame::Ptr> mFramesQueue;
     long mOutputAudioOn;
     atomic<char> mNbAudioUser;
     string mOwner;

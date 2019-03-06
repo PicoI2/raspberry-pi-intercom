@@ -93,10 +93,10 @@ void CHttpServer::OnMessage(websocketpp::connection_hdl hdl, WSServer::message_p
     string SessionId = http::GetCookie(Cookies, "session_id");
 
     if (!SessionId.empty() && Audio.SetOwner(SessionId, true)) {
-        for (size_t i=0; i<Message.length()/SAMPLE_SIZE; ++i) {
-            CAudioSample::Ptr pSample (new CAudioSample());
-            memcpy(pSample->buf, Message.data()+(i*SAMPLE_SIZE), SAMPLE_SIZE);
-            Audio.Push(pSample);
+        for (size_t i=0; i<Message.length()/FRAME_SIZE; ++i) {
+            CAudioFrame::Ptr pFrame (new CAudioFrame());
+            memcpy(pFrame->buf, Message.data()+(i*FRAME_SIZE), FRAME_SIZE);
+            Audio.Push(pFrame);
         }
     }
 }

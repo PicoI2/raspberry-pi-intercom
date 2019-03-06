@@ -196,7 +196,7 @@ string CMain::OnRequest (const WSRequest& aHttpRequest) {
             // Return config in json
             Json::Value JsonConfig;
             JsonConfig["mode"] = Config.GetString("mode");
-            JsonConfig["frameBySample"] = FRAME_BY_SAMPLE;
+            JsonConfig["sampleByFrame"] = SAMPLE_BY_FRAME;
             JsonConfig["rate"] = RATE;
             JsonConfig["videoSrc"] = mbClientMode ? Config.GetString("server-ip") : "";
             Result = JsonConfig.toStyledString();

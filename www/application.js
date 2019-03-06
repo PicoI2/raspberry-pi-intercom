@@ -25,7 +25,7 @@ ngApp.controller("intercomController", function ($http, $timeout, $scope) {
             console.log(config);
             if (response.data) {
                 me.mbModeClient = ("client" == config.mode);
-                me.frameBySample = config.frameBySample;
+                me.sampleByFrame = config.sampleByFrame;
                 me.rate = config.rate;
                 if (me.mbModeClient) {
                     me.videoSrc = `http://${config.videoSrc}:8081`;
@@ -102,9 +102,9 @@ ngApp.controller("intercomController", function ($http, $timeout, $scope) {
                 }
                 // If rate of audio context is not the same of sample, convert it to expected sample rate
                 if (me.audioContext.sampleRate != me.rate) {
-                    const offlineCtx = new OfflineAudioContext (1, me.frameBySample * (me.audioContext.sampleRate / me.rate) , me.audioContext.sampleRate);
+                    const offlineCtx = new OfflineAudioContext (1, me.sampleByFrame * (me.audioContext.sampleRate / me.rate) , me.audioContext.sampleRate);
                     const source = offlineCtx.createBufferSource();
-                    source.buffer = me.audioContext.createBuffer(1, me.frameBySample, me.rate);
+                    source.buffer = me.audioContext.createBuffer(1, me.sampleByFrame, me.rate);
                     for (let i=0; i<sampleFloatArray.length; ++i) {
                         source.buffer.getChannelData(0)[i] = sampleFloatArray[i];
                     }
@@ -194,7 +194,7 @@ ngApp.controller("intercomController", function ($http, $timeout, $scope) {
                 me.audioContext = new AudioContext();
                 console.log("me.audioContext:", me.audioContext);
             }
-            me.audioProcess = me.audioContext.createScriptProcessor(me.frameBySample, 1, 1);
+            me.audioProcess = me.audioContext.createScriptProcessor(me.sampleByFrame, 1, 1);
             me.audioProcess.connect(me.audioContext.destination);
             me.audioProcess.onaudioprocess = (e) => {
                 // console.log("play...:");
@@ -233,7 +233,7 @@ ngApp.controller("intercomController", function ($http, $timeout, $scope) {
     me.sendBuffer = (inputBuffer) => {
         if (me.audioContext.sampleRate != me.rate) {
             // Convert rate
-            const offlineCtx = new OfflineAudioContext (1, me.frameBySample / (me.audioContext.sampleRate / me.rate), me.rate);
+            const offlineCtx = new OfflineAudioContext (1, me.sampleByFrame / (me.audioContext.sampleRate / me.rate), me.rate);
             const source = offlineCtx.createBufferSource();
             // console.log("e.inputBuffer: ", e.inputBuffer);
             source.buffer = inputBuffer;
@@ -245,9 +245,9 @@ ngApp.controller("intercomController", function ($http, $timeout, $scope) {
                 buffer = renderedBuffer.getChannelData(0)
                 for (let i=0; i<buffer.length; ++i) {
                     me.sendQueue.push(buffer[i] * 0x7FFF);
-                    if (me.sendQueue.length == me.frameBySample) {
-                        let sample = Int16Array.from(me.sendQueue);
-                        me.ws.send(sample);
+                    if (me.sendQueue.length == me.sampleByFrame) {
+                        let frame = Int16Array.from(me.sendQueue);
+                        me.ws.send(frame);
                         me.sendQueue = []; // Empty me.sendQueue
                     }
                 }

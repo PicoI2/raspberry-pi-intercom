@@ -18,8 +18,8 @@ void CAudio::Init()
         IO.AddOutput(mOutputAudioOn, false);
     }
 
-    mEchoState = speex_echo_state_init(FRAME_BY_SAMPLE, FRAME_BY_SAMPLE);
-    mPreprocessState = speex_preprocess_state_init(FRAME_BY_SAMPLE, RATE);
+    mEchoState = speex_echo_state_init(SAMPLE_BY_FRAME, FILTER_LENGTH);
+    mPreprocessState = speex_preprocess_state_init(SAMPLE_BY_FRAME, RATE);
     int SampleRate = RATE;
     speex_echo_ctl(mEchoState, SPEEX_ECHO_SET_SAMPLING_RATE, &SampleRate);
     speex_preprocess_ctl(mPreprocessState, SPEEX_PREPROCESS_SET_ECHO_STATE, mEchoState);
@@ -64,16 +64,16 @@ void CAudio::Play()
     }
 }
 
-// Push an audio sample in play queue
-void CAudio::Push (CAudioSample::Ptr apSample) {
+// Push an audio frame in play queue
+void CAudio::Push (CAudioFrame::Ptr apFrame) {
     if (mbPlay) {
         mMutexQueue.lock();
         // If more than 100 samples in queue (~4.6 seconds), delete the older one.
-        if (mSamplesQueue.size() > 100) {
-            mSamplesQueue.pop();
-            cerr << "mSamplesQueue is full" << endl;
+        if (mFramesQueue.size() > 100) {
+            mFramesQueue.pop();
+            cerr << "mFramesQueue is full" << endl;
         }
-        mSamplesQueue.push(apSample);
+        mFramesQueue.push(apFrame);
         mMutexQueue.unlock();
     }
 }
@@ -145,35 +145,35 @@ void CAudio::PlayThread()
 {
     int err;
 
-    CAudioSample::Ptr pSample;
+    CAudioFrame::Ptr pFrame;
 
     cout << "Start playing" << endl;
 
     while (mbPlay) {
-        if (mSamplesQueue.empty()) {
+        if (mFramesQueue.empty()) {
             // Wait for samples
             this_thread::sleep_for(chrono::milliseconds(1));
         }
         else {
             // Play sample
             mMutexQueue.lock();
-            pSample = mSamplesQueue.front();
-            mSamplesQueue.pop();
+            pFrame = mFramesQueue.front();
+            mFramesQueue.pop();
             mMutexQueue.unlock();
 
-            if (err = snd_pcm_writei(mPlayPcmHandle, pSample->buf, FRAME_BY_SAMPLE) == -EPIPE) {
+            if (err = snd_pcm_writei(mPlayPcmHandle, pFrame->buf, SAMPLE_BY_FRAME) == -EPIPE) {
                 cout << "XRUN " << endl;
                 this_thread::sleep_for(chrono::milliseconds(80));
                 snd_pcm_prepare(mPlayPcmHandle);
-                snd_pcm_writei(mPlayPcmHandle, pSample->buf, FRAME_BY_SAMPLE);
-                speex_echo_playback (mEchoState, (spx_int16_t*)pSample->buf);
+                snd_pcm_writei(mPlayPcmHandle, pFrame->buf, SAMPLE_BY_FRAME);
+                speex_echo_playback (mEchoState, (spx_int16_t*)pFrame->buf);
             } else if (err < 0) {
                 cerr << "ERROR. Can't write to PCM device (" << snd_strerror(err) << ")" << endl;
                 speex_echo_state_reset (mEchoState);
                 break;
             }
             else {
-                speex_echo_playback (mEchoState, (spx_int16_t*)pSample->buf);
+                speex_echo_playback (mEchoState, (spx_int16_t*)pFrame->buf);
             }
         }
     }
@@ -205,19 +205,19 @@ void CAudio::RecordThread()
     cout << "Start recording" << endl;
 
     while (mbRecord) {
-        CAudioSample::Ptr pSample (new CAudioSample());
-        if ((err = snd_pcm_readi (mRecordPcmHandle, pSample->buf, FRAME_BY_SAMPLE)) != FRAME_BY_SAMPLE) {
+        CAudioFrame::Ptr pFrame (new CAudioFrame());
+        if ((err = snd_pcm_readi (mRecordPcmHandle, pFrame->buf, SAMPLE_BY_FRAME)) != SAMPLE_BY_FRAME) {
             cerr << "read from audio interface failed (" << snd_strerror (err) << ")" << endl;
             break;
         }
         else if (mbPlay) {
-            CAudioSample::Ptr pSampleWithoutEcho (new CAudioSample());
-            speex_echo_capture (mEchoState, (spx_int16_t*)pSample->buf, (spx_int16_t*)pSampleWithoutEcho->buf);
-            speex_preprocess_run (mPreprocessState, (spx_int16_t*)pSampleWithoutEcho->buf);
-            pSample = pSampleWithoutEcho;
+            CAudioFrame::Ptr pFrameWithoutEcho (new CAudioFrame());
+            speex_echo_capture (mEchoState, (spx_int16_t*)pFrame->buf, (spx_int16_t*)pFrameWithoutEcho->buf);
+            speex_preprocess_run (mPreprocessState, (spx_int16_t*)pFrameWithoutEcho->buf);
+            pFrame = pFrameWithoutEcho;
         }
-        HttpServer.SendMessage(pSample->buf, sizeof(pSample->buf));
-        Udp.Send(pSample->buf, sizeof(pSample->buf));
+        HttpServer.SendMessage(pFrame->buf, sizeof(pFrame->buf));
+        Udp.Send(pFrame->buf, sizeof(pFrame->buf));
     }
 
     cout << "Stop recording" << endl;
@@ -237,8 +237,8 @@ void CAudio::Stop()
         mPlayThread.join();
     }
     mMutexQueue.lock();
-    while (!mSamplesQueue.empty()) {
-        mSamplesQueue.pop();
+    while (!mFramesQueue.empty()) {
+        mFramesQueue.pop();
     }
     mMutexQueue.unlock();
     cout << "Audio stopped" << endl;

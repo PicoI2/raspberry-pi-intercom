@@ -50,11 +50,11 @@ void CUdp::StartListening (void)
 
 void CUdp::ReceiveFrom (const boost::system::error_code& error, size_t bytes_transferred)
 {
-    if (SAMPLE_SIZE==bytes_transferred) {
+    if (FRAME_SIZE==bytes_transferred) {
         if (Audio.SetOwner("udp", true)) {
-            CAudioSample::Ptr pSample (new CAudioSample());
-            memcpy(pSample->buf, mBuffer.data(), SAMPLE_SIZE);
-            Audio.Push(pSample);
+            CAudioFrame::Ptr pFrame (new CAudioFrame());
+            memcpy(pFrame->buf, mBuffer.data(), FRAME_SIZE);
+            Audio.Push(pFrame);
         }
     }
     else {

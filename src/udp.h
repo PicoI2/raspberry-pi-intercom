@@ -19,7 +19,7 @@ public :
 
     boost::asio::io_service* mpIoService;
     udp::socket* mpSocket;
-    array<char, 10*SAMPLE_SIZE> mBuffer;
+    array<char, 10*FRAME_SIZE> mBuffer;
     udp::endpoint mRemoteEndPoint;
     udp::endpoint mReceiveRemoteEndPoint;
     unsigned long mRemoteUdpPort;
