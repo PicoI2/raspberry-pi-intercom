@@ -4,7 +4,6 @@
 #include "config.h"
 #include "io.h"
 
-#include <alsa/asoundlib.h>
 #include <stdio.h>
 #include <iostream>
 
@@ -18,6 +17,19 @@ void CAudio::Init()
     if (mOutputAudioOn) {
         IO.AddOutput(mOutputAudioOn, false);
     }
+
+    mEchoState = speex_echo_state_init(FRAME_BY_SAMPLE, FRAME_BY_SAMPLE);
+    mPreprocessState = speex_preprocess_state_init(FRAME_BY_SAMPLE, RATE);
+    int SampleRate = RATE;
+    speex_echo_ctl(mEchoState, SPEEX_ECHO_SET_SAMPLING_RATE, &SampleRate);
+    speex_preprocess_ctl(mPreprocessState, SPEEX_PREPROCESS_SET_ECHO_STATE, mEchoState);
+    spx_int32_t ON = 1;
+    speex_preprocess_ctl (mPreprocessState, SPEEX_PREPROCESS_SET_DENOISE, &ON);
+    speex_preprocess_ctl (mPreprocessState, SPEEX_PREPROCESS_SET_DEREVERB, &ON);
+    spx_int32_t EchoLevel = -40;
+    speex_preprocess_ctl (mPreprocessState, SPEEX_PREPROCESS_SET_ECHO_SUPPRESS, &EchoLevel);
+    spx_int32_t EchoLevelActive = -15;
+    speex_preprocess_ctl (mPreprocessState, SPEEX_PREPROCESS_SET_ECHO_SUPPRESS_ACTIVE, &EchoLevelActive);
 }
 
 // Set audio output on/off
@@ -127,9 +139,14 @@ void CAudio::PlayThread()
                 this_thread::sleep_for(chrono::milliseconds(80));
                 snd_pcm_prepare(pcm_handle);
                 snd_pcm_writei(pcm_handle, pSample->buf, FRAME_BY_SAMPLE);
+                speex_echo_playback (mEchoState, (spx_int16_t*)pSample->buf);
             } else if (err < 0) {
                 cerr << "ERROR. Can't write to PCM device (" << snd_strerror(err) << ")" << endl;
+                speex_echo_state_reset (mEchoState);
                 break;
+            }
+            else {
+                speex_echo_playback (mEchoState, (spx_int16_t*)pSample->buf);
             }
         }
     }
@@ -236,13 +253,19 @@ void CAudio::RecordThread()
     cout << "Start recording" << endl;
 
     while (mbRecord) {
-        CAudioSample Sample;
-        if ((err = snd_pcm_readi (capture_handle, Sample.buf, FRAME_BY_SAMPLE)) != FRAME_BY_SAMPLE) {
+        CAudioSample::Ptr pSample (new CAudioSample());
+        if ((err = snd_pcm_readi (capture_handle, pSample->buf, FRAME_BY_SAMPLE)) != FRAME_BY_SAMPLE) {
             cerr << "read from audio interface failed (" << snd_strerror (err) << ")" << endl;
             break;
         }
-        HttpServer.SendMessage(Sample.buf, sizeof(Sample.buf));
-        Udp.Send(Sample.buf, sizeof(Sample.buf));
+        else if (mbPlay) {
+            CAudioSample::Ptr pSampleWithoutEcho (new CAudioSample());
+            speex_echo_capture (mEchoState, (spx_int16_t*)pSample->buf, (spx_int16_t*)pSampleWithoutEcho->buf);
+            speex_preprocess_run (mPreprocessState, (spx_int16_t*)pSampleWithoutEcho->buf);
+            pSample = pSampleWithoutEcho;
+        }
+        HttpServer.SendMessage(pSample->buf, sizeof(pSample->buf));
+        Udp.Send(pSample->buf, sizeof(pSample->buf));
     }
 
     cout << "Stop recording" << endl;

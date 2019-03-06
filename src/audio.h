@@ -5,6 +5,10 @@
 #include <thread>
 #include <queue>
 
+#include <speex/speex_echo.h>
+#include <speex/speex_preprocess.h>
+#include <alsa/asoundlib.h>
+
 using namespace std;
 
 #define RATE 22050  // Hz
@@ -41,6 +45,10 @@ protected :
     long mOutputAudioOn;
     atomic<char> mNbAudioUser;
     string mOwner;
+    SpeexEchoState* mEchoState;
+    SpeexPreprocessState* mPreprocessState;
+    snd_pcm_t* mPlayPcmHandle;
+    snd_pcm_t* mRecordPcmHandle;
 };
 
 extern CAudio Audio;

@@ -1,9 +1,3 @@
-# sudo apt install libboost-system-dev
-# sudo apt install libwebsocketpp-dev
-# sudo apt install libjsoncpp-dev
-# sudo apt install libssl-dev
-# sudo apt install uuid-dev
-
 cmake_minimum_required (VERSION 3.0.2)
 project (rpi-intercom)
 
@@ -19,10 +13,25 @@ set(BOOST_MIN_VERSION "1.39.0")
 find_package(Boost ${BOOST_MIN_VERSION} REQUIRED COMPONENTS system)
 
 find_package(jsoncpp REQUIRED)
-# find_package(ssl REQUIRED) TODO
-# find_package(uuid REQUIRED) TODO
+
+find_package(websocketpp REQUIRED)
+
+find_library(LIB_SSL ssl)
+if(NOT LIB_SSL)
+    message(FATAL_ERROR "libssl not found. Try : sudo apt install libssl-dev")
+endif()
+
+find_library(LIB_UUID uuid)
+if(NOT LIB_UUID)
+    message(FATAL_ERROR "uuid not found. Try : sudo apt install uuid-dev")
+endif()
+
+find_library(LIB_SPEEXDSP speexdsp)
+if(NOT LIB_SPEEXDSP)
+    message(FATAL_ERROR "libspeexdsp not found. Try : sudo apt install libspeexdsp-dev")
+endif()
 
 file (GLOB SOURCE_FILES src/*.cpp)
 
 add_executable(rpi-intercom ${SOURCE_FILES})
-target_link_libraries(rpi-intercom pthread boost_system uuid asound ssl crypto jsoncpp)
+target_link_libraries(rpi-intercom pthread boost_system uuid asound ssl crypto jsoncpp speexdsp)
