@@ -9,7 +9,7 @@
     <script src="application.js"></script>
 </head>
 <body ng-controller="intercomController as ctrl" no-drag-drop>
-    <img class="video" src="{{ctrl.videoSrc}}"><br>
+    <img ng-click="ctrl.reloadVideo()" class="video" src="{{ctrl.videoSrc}}"><br>
     <span ng-style="{'color': ctrl.message.color}">{{ctrl.message.text}}</span><br>
     <div class="big-buttons">
         <button ng-click="ctrl.stopring(true)"><span class="glyphicon">&#xe123; </span>Stop ringing</button>

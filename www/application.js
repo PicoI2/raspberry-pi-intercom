@@ -376,8 +376,19 @@ ngApp.controller("intercomController", function ($http, $timeout, $scope) {
             }
         );
     }
+
     // At startup, check if audio is busy
     me.checkAudioBusy();
+
+    // Reload video when user click on image
+    me.reloadVideo = () => {
+        me.videoSrcCopy = me.videoSrc;
+        me.videoSrc = '';
+        $timeout(() => {
+            me.videoSrc = me.videoSrcCopy;
+        }, 50);
+    };
+    
 });
 
 // Prefent drag and drop wich can be annoying on touch screen
