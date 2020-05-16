@@ -31,6 +31,7 @@ sudo apt install libwebsocketpp-dev
 sudo apt install libjsoncpp-dev
 sudo apt install libssl-dev
 sudo apt install uuid-dev
+sudo apt install libspeexdsp-dev
 git clone https://github.com/PicoI2/raspberry-pi-intercom
 cd raspberry-pi-intercom
 cmake .

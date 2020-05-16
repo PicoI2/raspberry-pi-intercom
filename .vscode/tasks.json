@@ -6,7 +6,7 @@
         {
             "label": "build rpi-intercom",
             "type": "shell",
-            "command": "make rpi-intercom",
+            "command": "make rpi-intercom -j8",
             "problemMatcher": [
                 "$gcc"
             ],
