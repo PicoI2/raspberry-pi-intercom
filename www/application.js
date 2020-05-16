@@ -383,7 +383,7 @@ ngApp.controller("intercomController", function ($http, $timeout, $scope) {
     // Reload video when user click on image
     me.reloadVideo = () => {
         me.videoSrcCopy = me.videoSrc;
-        me.videoSrc = '';
+        me.videoSrc = 'favicon.ico';
         $timeout(() => {
             me.videoSrc = me.videoSrcCopy;
         }, 50);
