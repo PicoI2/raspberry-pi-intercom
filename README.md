@@ -25,13 +25,7 @@ Dependencies
 Compilation
 ---------
 ```Shell
-sudo apt install cmake
-sudo apt install libboost-system-dev
-sudo apt install libwebsocketpp-dev
-sudo apt install libjsoncpp-dev
-sudo apt install libssl-dev
-sudo apt install uuid-dev
-sudo apt install libspeexdsp-dev
+sudo apt install cmake libboost-system-dev libasound2-dev libwebsocketpp-dev libjsoncpp-dev libssl-dev uuid-dev libspeexdsp-dev
 git clone https://github.com/PicoI2/raspberry-pi-intercom
 cd raspberry-pi-intercom
 cmake .
