@@ -26,6 +26,7 @@ string CPushSafer::ToFormData (string aKey, string aValue)
 
 bool CPushSafer::Notification (string aMessage)
 {
+    bool bRes = false;
 // k = Private or Alias Key*
 // d = Device
 // t = Title
@@ -111,8 +112,10 @@ Content-Type: multipart/form-data; boundary=------------------------3173acd4f807
             cout << Reply << endl;;
         }
         Socket.close();
+        bRes = true;
     }
     catch (exception& e) {
         cerr << "Cannot access " << Query.host_name() << endl;
     }
+    return bRes;
 }

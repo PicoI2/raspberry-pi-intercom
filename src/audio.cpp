@@ -70,9 +70,15 @@ int CAudio::StartPcm(const char* aName, bool bRecord)
     int err;
         
     /* Open the PCM device in playback mode */
-    snd_pcm_t* PcmHandle = bRecord ? mRecordPcmHandle : mPlayPcmHandle;
+    snd_pcm_t* PcmHandle;
     if (err = snd_pcm_open(&PcmHandle, aName, bRecord ? SND_PCM_STREAM_CAPTURE : SND_PCM_STREAM_PLAYBACK, 0) < 0) {
         cerr << "ERROR: Can't open " << aName << " PCM device (" << snd_strerror (err) << ")" << endl;
+    }
+    if (bRecord) {
+        mRecordPcmHandle = PcmHandle;
+    }
+    else {
+        mPlayPcmHandle = PcmHandle;
     }
 
     /* Allocate parameters object and fill it with default values*/
@@ -165,14 +171,14 @@ void CAudio::Thread()
                 cerr << "read from audio interface failed (" << snd_strerror (err) << ")" << endl;
                 break;
             }
-            if (mbPlay) {
+            if (pPlaySample) {
                 CAudioSample::Ptr pSampleWithoutEcho (new CAudioSample());
                 speex_echo_cancellation(mEchoState, (spx_int16_t*)pSample->buf, (spx_int16_t*)pPlaySample->buf, (spx_int16_t*)pSampleWithoutEcho->buf);
                 pSample = pSampleWithoutEcho;
             }
             
-            HttpServer.SendMessage(pSample->buf, sizeof(pSample->buf));
-            Udp.Send(pSample->buf, sizeof(pSample->buf));
+            HttpServer.SendMessage(pSample->buf, SAMPLE_SIZE);
+            Udp.Send(pSample->buf, SAMPLE_SIZE);
         }
     }
 }
