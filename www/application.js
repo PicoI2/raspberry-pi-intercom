@@ -156,14 +156,13 @@ ngApp.controller("intercomController", function ($http, $timeout, $scope) {
 
     // Bip
     me.bip = () => {
-        if (me.audioBip) me.audioBip.pause();
         me.audioBip = new Audio("bip.mp3");
         me.audioBip.play();
     }
 
     // Ring (server mode only)
     me.ring = () => {
-        if (me.audioRing) me.audioRing.pause();
+        me.pauseAudioRing();
         me.audioRing = new Audio("ring.wav");
         me.audioRing.play();
     };
@@ -173,12 +172,22 @@ ngApp.controller("intercomController", function ($http, $timeout, $scope) {
         console.log("Stop ring...");
         me.bip();
         if (!me.mbModeClient) {
-            if (me.audioRing) me.audioRing.pause();
+            me.pauseAudioRing();
         }
         else {
             me.get('/stopring');
         }
     };
+
+    // Pause audio ring
+    me.pauseAudioRing = () => {
+        try {
+            if (me.audioRing) me.audioRing.pause();
+        }
+        catch {
+            console.log("Exception me.audioRing.pause()");
+        }
+    }
     
     // Listen
     me.listen = (bip) => {
@@ -189,7 +198,7 @@ ngApp.controller("intercomController", function ($http, $timeout, $scope) {
         me.get('/startlisten');
         me.listening = true;
         if (!me.mbModeClient) {
-            if (me.audioRing) me.audioRing.pause();
+            me.pauseAudioRing();
             if (!me.audioContext) {
                 me.audioContext = new AudioContext();
                 console.log("me.audioContext:", me.audioContext);
@@ -219,7 +228,7 @@ ngApp.controller("intercomController", function ($http, $timeout, $scope) {
         me.recording = true;
         me.listen(false);
         if (!me.mbModeClient) {
-            if (me.audioRing) me.audioRing.pause();
+            me.pauseAudioRing();
             navigator.mediaDevices.getUserMedia({ audio: {channelCount: 1, echoCancellation: true, deviceId: me.deviceId} }).then( function(stream) {
                 me.source = me.audioContext.createMediaStreamSource(stream);
                 me.source.connect(me.audioProcess);
@@ -270,7 +279,7 @@ ngApp.controller("intercomController", function ($http, $timeout, $scope) {
         if (bip) {
             me.bip();
         }
-        if (me.audioRing) me.audioRing.pause();
+        me.pauseAudioRing();
         me.get('/dooropen');
     };
 
@@ -279,7 +288,7 @@ ngApp.controller("intercomController", function ($http, $timeout, $scope) {
         if (bip) {
             me.bip();
         }
-        if (me.audioRing) me.audioRing.pause();
+        me.pauseAudioRing();
         console.log("Hangup...");
         me.get('/hangup');
 
