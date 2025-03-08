@@ -10,7 +10,7 @@ You can speak with your guest and open him the door, either with the client rasp
 
 Supported platforms
 ---------
-- Raspbian 8.0 (Jessie)
+- Raspbian 8.0 (Jessie) to 12.8 (Bookworm)
 
 Dependencies
 ---------
@@ -74,6 +74,11 @@ password to use web interface
 - output-backlight-on (client)
 output to put screen backlight on
 
+Input and ouput numbers availables can be listed with 
+```Shell
+cat /sys/kernel/debug/gpio
+```
+
 HTTPS
 ---------
 Uncomment "add_definitions(-DUSE_HTTPS)" in CMakeLists.txt<br>
@@ -112,10 +117,12 @@ To handle camera, use motion :
 ```Shell
 sudo apt install motion
 ```
+
 Enable camera (5 Interfacing options, P1 Camera):
 ```Shell
 sudo raspi-config
 ```
+
 Edit /etc/motion/motion.conf to change theses lines :
 ```Shell
 daemon on
@@ -132,6 +139,8 @@ To start motion at startup, edit the file /etc/default/motion
 ```Shell
 start_motion_daemon=yes
 ```
+
+If you have an error message like '''''cannot create log file /var/log/motion/motion.log:''''', create the '''''/var/log/motion''''' and give rights to motion user.
 
 Pushsafer
 ---------

@@ -9,6 +9,8 @@ SyslogIdentifier=rpi-intercom
 WorkingDirectory=/opt/raspberry-pi-intercom/
 User=pi
 Group=pi
+Restart=always
+RestartSec=3
  
 [Install]
 WantedBy=multi-user.target

@@ -60,6 +60,9 @@ bool CIO::AddInput (int aGpio)
                     WatchInputs(false);
                     bRes = true;
                 }
+                else {
+                    cerr << "ERROR: epoll_ctl failed: " << strerror(errno) << std::endl;
+                }
             }
         }
     }
