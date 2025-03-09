@@ -118,21 +118,10 @@ To handle camera, use motion :
 sudo apt install motion
 ```
 
-Enable camera (5 Interfacing options, P1 Camera):
-```Shell
-sudo raspi-config
-```
-
 Edit /etc/motion/motion.conf to change theses lines :
 ```Shell
 daemon on
 stream_localhost off
-```
-
-Make your camera motion compatible :
-```Shell
-sudo modprobe bcm2835-v4l2
-echo "bcm2835-v4l2" | sudo tee -a /etc/modules
 ```
 
 To start motion at startup, edit the file /etc/default/motion
@@ -140,7 +129,19 @@ To start motion at startup, edit the file /etc/default/motion
 start_motion_daemon=yes
 ```
 
-If you have an error message like '''''cannot create log file /var/log/motion/motion.log:''''', create the '''''/var/log/motion''''' and give rights to motion user.
+If you have an error message like `cannot create log file /var/log/motion/motion.log:`, create the `/var/log/motion` and give rights to motion user.
+
+If you have an error message like :
+```Shell
+[1:ml1] [ERR] [VID] v4l2_fps_set: Error setting fps. Return code -1
+[1:ml1] [ERR] [VID] v4l2_mmap_set: Error starting stream. VIDIOC_STREAMON: Invalid argument
+```
+try to run motion with libcamerify :
+```Shell
+sudo apt install libcamera-tools libcamera-v4l2
+sudo libcamerify motion
+```
+If this fix motion, then edit the service file /lib/systemd/system/motion.service to replace motion with libcamerify motion.
 
 Pushsafer
 ---------
