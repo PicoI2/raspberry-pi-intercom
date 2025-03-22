@@ -117,8 +117,17 @@ void CAudio::StopPcm(bool bRecord)
     snd_pcm_t* PcmHandle = bRecord ? mRecordPcmHandle : mPlayPcmHandle;
     cout << "Stop playing" << endl;
 
-    snd_pcm_drain(PcmHandle);
-    snd_pcm_close(PcmHandle);
+    int err;
+    // Drop PCM to avoid blocking drain if necessary
+    if (err = snd_pcm_drop(PcmHandle) < 0) {
+        cerr << "ERROR: snd_pcm_drop (" << snd_strerror (err) << ")" << endl;
+    }
+    if (err = snd_pcm_drain(PcmHandle) < 0) {
+        cerr << "ERROR: snd_pcm_drain (" << snd_strerror (err) << ")" << endl;
+    }
+    if (err = snd_pcm_close(PcmHandle) < 0) {
+        cerr << "ERROR: snd_pcm_close (" << snd_strerror (err) << ")" << endl;
+    }
 
     if (!bRecord) {
         AudioOnOff(false);

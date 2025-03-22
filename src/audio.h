@@ -3,8 +3,9 @@
 #include <atomic>
 #include <memory>
 #include <mutex>
-#include <thread>
 #include <queue>
+#include <string>
+#include <thread>
 
 #include "speex/speex_echo.h"
 #include <alsa/asoundlib.h>
