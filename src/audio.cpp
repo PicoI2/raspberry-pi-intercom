@@ -71,7 +71,7 @@ int CAudio::StartPcm(const char* aName, bool bRecord)
         
     /* Open the PCM device in playback mode */
     snd_pcm_t* PcmHandle;
-    if (err = snd_pcm_open(&PcmHandle, aName, bRecord ? SND_PCM_STREAM_CAPTURE : SND_PCM_STREAM_PLAYBACK, 0) < 0) {
+    if ((err = snd_pcm_open(&PcmHandle, aName, bRecord ? SND_PCM_STREAM_CAPTURE : SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
         cerr << "ERROR: Can't open " << aName << " PCM device (" << snd_strerror (err) << ")" << endl;
     }
     if (bRecord) {
@@ -87,26 +87,26 @@ int CAudio::StartPcm(const char* aName, bool bRecord)
     snd_pcm_hw_params_any(PcmHandle, params);
 
     /* Set parameters */
-    if (err = snd_pcm_hw_params_set_access(PcmHandle, params, SND_PCM_ACCESS_RW_INTERLEAVED) < 0) {
+    if ((err = snd_pcm_hw_params_set_access(PcmHandle, params, SND_PCM_ACCESS_RW_INTERLEAVED)) < 0) {
         cerr << "ERROR: Can't set interleaved mode (" << snd_strerror (err) << ")" << endl;
     }
 
-    if (err = snd_pcm_hw_params_set_format(PcmHandle, params, SND_PCM_FORMAT_S16_LE) < 0) {
+    if ((err = snd_pcm_hw_params_set_format(PcmHandle, params, SND_PCM_FORMAT_S16_LE)) < 0) {
         cerr << "ERROR: Can't set format (" << snd_strerror (err) << ")" << endl;
     }
 
-    if (err = snd_pcm_hw_params_set_channels(PcmHandle, params, 1) < 0) {
+    if ((err = snd_pcm_hw_params_set_channels(PcmHandle, params, 1)) < 0) {
         cerr << "ERROR: Can't set channels number (" << snd_strerror (err) << ")" << endl;
     }
     unsigned int rate = RATE;
-    if (err = snd_pcm_hw_params_set_rate_near(PcmHandle, params, &rate, 0) < 0) {
+    if ((err = snd_pcm_hw_params_set_rate_near(PcmHandle, params, &rate, 0)) < 0) {
         cerr << "ERROR: Can't set rate (" << snd_strerror (err) << ")" << endl;
     }
 
     cout << "snd_pcm_hw_params_set_rate_near to:" << rate << endl;
 
     /* Write parameters */
-    if (err = snd_pcm_hw_params(PcmHandle, params) < 0) {
+    if ((err = snd_pcm_hw_params(PcmHandle, params)) < 0) {
         cerr << "ERROR: Can't set hardware parameters (" << snd_strerror (err) << ")" << endl;
     }
     return err;
@@ -119,13 +119,13 @@ void CAudio::StopPcm(bool bRecord)
 
     int err;
     // Drop PCM to avoid blocking drain if necessary
-    if (err = snd_pcm_drop(PcmHandle) < 0) {
+    if ((err = snd_pcm_drop(PcmHandle)) < 0) {
         cerr << "ERROR: snd_pcm_drop (" << snd_strerror (err) << ")" << endl;
     }
-    if (err = snd_pcm_drain(PcmHandle) < 0) {
+    if ((err = snd_pcm_drain(PcmHandle)) < 0) {
         cerr << "ERROR: snd_pcm_drain (" << snd_strerror (err) << ")" << endl;
     }
-    if (err = snd_pcm_close(PcmHandle) < 0) {
+    if ((err = snd_pcm_close(PcmHandle)) < 0) {
         cerr << "ERROR: snd_pcm_close (" << snd_strerror (err) << ")" << endl;
     }
 
