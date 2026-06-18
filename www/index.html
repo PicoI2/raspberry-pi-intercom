@@ -1,29 +1,34 @@
 <!DOCTYPE HTML>
-<html lang="fr" ng-app="ngApp">
+<html lang="fr">
 <head>
     <title>rpi-intercom</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width">
     <link rel="stylesheet" href="style.css"/>
-    <script src="angular.1.7.4.min.js"></script>
-    <script src="application.js"></script>
+    <script src="vue.global.prod.js"></script>
 </head>
-<body ng-controller="intercomController as ctrl" no-drag-drop>
-    <img ng-click="ctrl.reloadVideo()" class="video" src="{{ctrl.videoSrc}}"><br>
-    <span ng-style="{'color': ctrl.message.color}">{{ctrl.message.text}}</span><br>
-    <div class="big-buttons">
-        <button ng-click="ctrl.stopring(true)"><span class="glyphicon">&#xe123; </span>Stop ringing</button>
-        <button ng-click="ctrl.listen(true)" ng-disabled="ctrl.listening"><span class="glyphicon">&#xe035; </span>Listen</button>
-        <button ng-click="ctrl.speak(true)" ng-disabled="ctrl.recording "><span class="glyphicon">&#xe038; </span>Speak</button>
-        <button ng-click="ctrl.dooropen(true)"><span class="glyphicon">&#xe013; </span>Open door</button>
-        <button ng-click="ctrl.hangup(true)" ng-disabled="!ctrl.listening && !ctrl.recording"><span class="glyphicon">&#xe036; </span>Hangup</button>
+<body>
+    <div id="app" v-no-drag-drop>
+        <img @click="reloadVideo()" class="video" :src="videoSrc"><br>
+        <span :style="{ color: message.color }">{{ message.text }}</span><br>
+        <div class="big-buttons">
+            <button @click="stopring(true)"><span class="glyphicon">&#xe123; </span>Stop ringing</button>
+            <button @click="listen(true)" :disabled="listening"><span class="glyphicon">&#xe035; </span>Listen</button>
+            <button @click="speak(true)" :disabled="recording"><span class="glyphicon">&#xe038; </span>Speak</button>
+            <button @click="dooropen(true)"><span class="glyphicon">&#xe013; </span>Open door</button>
+            <button @click="hangup(true)" :disabled="!listening && !recording"><span class="glyphicon">&#xe036; </span>Hangup</button>
+        </div>
+        <br><br>
+        <span :style="{ color: bPasswordOk ? 'green' : 'red' }">Password: </span> <input type="password" v-model="password">
+        <button v-if="!bPasswordOk" @click="sendPassword(true)"><span class="glyphicon">&#xe113; </span>Send password</button>
+        <button v-if="bPasswordOk && !bPasswordSaved" @click="savePassword(true)"><span class="glyphicon">&#xe172; </span>Save password</button>
+        <button v-if="bPasswordOk" @click="disconnect(true)"><span class="glyphicon">&#xe014; </span>Disconnect</button>
+        <br><br>
+        <span v-if="!mbModeClient" style="color: white">Audio input: </span>
+        <select v-model="deviceId" @change="saveDeviceId()">
+            <option v-for="device in devices" :key="device.deviceId" :value="device.deviceId">{{ device.kind + ' ' + device.label }}</option>
+        </select><br>
     </div>
-    <br><br>
-    <span ng-style="{'color': ctrl.bPasswordOk ? 'green' : 'red'}">Password: </span> <input type="password" ng-model="ctrl.password">
-    <button ng-if="!ctrl.bPasswordOk" ng-click="ctrl.sendPassword(true)"><span class="glyphicon">&#xe113; </span>Send password</button>
-    <button ng-if="ctrl.bPasswordOk && !ctrl.bPasswordSaved" ng-click="ctrl.savePassword(true)" title="nhetest"><span class="glyphicon">&#xe172; </span>Save password</button>
-    <button ng-if="ctrl.bPasswordOk" ng-click="ctrl.disconnect(true)"><span class="glyphicon">&#xe014; </span>Disconnect</button>
-    <br><br>
-    <span ng-if="!ctrl.mbModeClient" style="color: white">Audio input: </span> <select ng-options="device.deviceId as (device.kind + ' ' + device.label) for device in ctrl.devices" ng-model="ctrl.deviceId" ng-change="ctrl.saveDeviceId()"></select><br>
+    <script src="application.js"></script>
 </body>
 </html>
