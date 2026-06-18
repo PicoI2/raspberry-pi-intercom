@@ -100,10 +100,10 @@ void CRing::Thread()
         fseek(pFile, StartPos, SEEK_SET);
         unsigned int err;
 
-        const char* name = Config.GetString("sound-card-play").c_str();
-        if ('\0' == name[0]) {
-            name = "default";
-        }
+        // Keep the config string alive: GetString returns by value, so calling
+        // .c_str() on the temporary directly would leave a dangling pointer.
+        string CardName = Config.GetString("sound-card-play");
+        const char* name = CardName.empty() ? "default" : CardName.c_str();
         
         /* Open the PCM device in playback mode */
         snd_pcm_t *pcm_handle;

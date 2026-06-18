@@ -37,18 +37,22 @@ public :
 protected :
     void StartThread ();
     void Thread ();
-    int  StartPcm (const char* aName, bool bRecord);
-    void StopPcm (bool bRecord);
+    bool OpenPcm (bool bRecord);    // Open and configure a PCM handle (worker thread only)
+    void ClosePcm (bool bRecord);   // Drop and close a PCM handle (worker thread only)
 
     thread mThread;
-    atomic<bool> mbPlay;
-    atomic<bool> mbRecord;
+    atomic<bool> mbThreadRunning {false};   // Is the worker thread alive
+    atomic<bool> mbPlay;                     // Desired state: user wants playback
+    atomic<bool> mbRecord;                   // Desired state: user wants recording
     mutex mMutexQueue;
     queue<CAudioSample::Ptr> mSamplesQueue;
     long mOutputAudioOn;
     atomic<char> mNbAudioUser;
     string mOwner;
     SpeexEchoState* mEchoState;
+    // PCM handles are owned by the worker thread (open/close). Non-null means open.
+    // mMutexPcm guards them so Stop() can safely snd_pcm_drop() to unblock the worker.
+    mutex mMutexPcm;
     snd_pcm_t* mPlayPcmHandle;
     snd_pcm_t* mRecordPcmHandle;
 };

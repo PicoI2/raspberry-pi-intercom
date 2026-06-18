@@ -53,7 +53,12 @@ void CHttpServer::Stop()
 {
     cout << "Stopping HTTP server..." << endl;
     mServer.stop_listening();
-    for (auto hdl : mClientList) {
+    ConnectionList Clients;
+    {
+        lock_guard<mutex> Lock(mClientListMutex);
+        Clients = mClientList;
+    }
+    for (auto hdl : Clients) {
         mServer.close(hdl, websocketpp::close::status::going_away, "Server shuting down");
     }
 }
@@ -68,6 +73,7 @@ void CHttpServer::OnOpen (websocketpp::connection_hdl hdl) {
     
     if (Sessions.IsSessionExist(SessionId)) {
         mServer.send(hdl, ALIVE, websocketpp::frame::opcode::text);
+        lock_guard<mutex> Lock(mClientListMutex);
         mClientList.insert(hdl);
     }
     else {
@@ -77,6 +83,7 @@ void CHttpServer::OnOpen (websocketpp::connection_hdl hdl) {
 
 // When a client close a websocket
 void CHttpServer::OnClose (websocketpp::connection_hdl hdl) {
+    lock_guard<mutex> Lock(mClientListMutex);
     mClientList.erase(hdl);
 }
 
@@ -103,15 +110,38 @@ void CHttpServer::OnMessage(websocketpp::connection_hdl hdl, WSServer::message_p
 
 // Broadcast text message to all clients
 void CHttpServer::SendMessage (string aMessage) {
-    for (auto hdl : mClientList) {
-        mServer.send(hdl, aMessage, websocketpp::frame::opcode::text);
+    // Snapshot the client list under lock, then send outside the lock.
+    // SendMessage is also called from the audio thread, so iterating the
+    // shared list directly would race with OnOpen/OnClose.
+    ConnectionList Clients;
+    {
+        lock_guard<mutex> Lock(mClientListMutex);
+        Clients = mClientList;
+    }
+    for (auto hdl : Clients) {
+        try {
+            mServer.send(hdl, aMessage, websocketpp::frame::opcode::text);
+        }
+        catch (const exception& e) {
+            cerr << "SendMessage failed: " << e.what() << endl;
+        }
     }
 }
 
 // Broadcast binary message to all clients
 void CHttpServer::SendMessage (const char* aMessage, size_t aSize) {
-    for (auto hdl : mClientList) {
-        mServer.send(hdl, aMessage, aSize, websocketpp::frame::opcode::binary);
+    ConnectionList Clients;
+    {
+        lock_guard<mutex> Lock(mClientListMutex);
+        Clients = mClientList;
+    }
+    for (auto hdl : Clients) {
+        try {
+            mServer.send(hdl, aMessage, aSize, websocketpp::frame::opcode::binary);
+        }
+        catch (const exception& e) {
+            cerr << "SendMessage failed: " << e.what() << endl;
+        }
     }
 }
 

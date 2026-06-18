@@ -36,17 +36,11 @@ void CAudio::AudioOnOff (bool abOn)
     }
 }
 
-// Start play thread
+// Request playback. The worker thread opens the PCM and starts playing.
 void CAudio::Play()
 {
     if (!mbPlay) {
-        const char* name = Config.GetString("sound-card-play").c_str();
-        if ('\0' == name[0]) {
-            name = "default";
-        }
-        StartPcm(name, false);
         mbPlay = true;
-        AudioOnOff(true);
         StartThread();
     }
 }
@@ -65,20 +59,22 @@ void CAudio::Push (CAudioSample::Ptr apSample) {
     }
 }
 
-int CAudio::StartPcm(const char* aName, bool bRecord)
+// Open and configure a PCM handle. Returns true on success.
+// Called from the worker thread only.
+bool CAudio::OpenPcm(bool bRecord)
 {
+    // Keep the config string alive: GetString returns by value, so calling
+    // .c_str() on the temporary directly would leave a dangling pointer.
+    string CardName = Config.GetString(bRecord ? "sound-card-rec" : "sound-card-play");
+    const char* name = CardName.empty() ? "default" : CardName.c_str();
+
     int err;
-        
-    /* Open the PCM device in playback mode */
-    snd_pcm_t* PcmHandle;
-    if (err = snd_pcm_open(&PcmHandle, aName, bRecord ? SND_PCM_STREAM_CAPTURE : SND_PCM_STREAM_PLAYBACK, 0) < 0) {
-        cerr << "ERROR: Can't open " << aName << " PCM device (" << snd_strerror (err) << ")" << endl;
-    }
-    if (bRecord) {
-        mRecordPcmHandle = PcmHandle;
-    }
-    else {
-        mPlayPcmHandle = PcmHandle;
+
+    /* Open the PCM device */
+    snd_pcm_t* PcmHandle = nullptr;
+    if ((err = snd_pcm_open(&PcmHandle, name, bRecord ? SND_PCM_STREAM_CAPTURE : SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
+        cerr << "ERROR: Can't open " << name << " PCM device (" << snd_strerror (err) << ")" << endl;
+        return false;
     }
 
     /* Allocate parameters object and fill it with default values*/
@@ -87,46 +83,71 @@ int CAudio::StartPcm(const char* aName, bool bRecord)
     snd_pcm_hw_params_any(PcmHandle, params);
 
     /* Set parameters */
-    if (err = snd_pcm_hw_params_set_access(PcmHandle, params, SND_PCM_ACCESS_RW_INTERLEAVED) < 0) {
+    if ((err = snd_pcm_hw_params_set_access(PcmHandle, params, SND_PCM_ACCESS_RW_INTERLEAVED)) < 0) {
         cerr << "ERROR: Can't set interleaved mode (" << snd_strerror (err) << ")" << endl;
     }
 
-    if (err = snd_pcm_hw_params_set_format(PcmHandle, params, SND_PCM_FORMAT_S16_LE) < 0) {
+    if ((err = snd_pcm_hw_params_set_format(PcmHandle, params, SND_PCM_FORMAT_S16_LE)) < 0) {
         cerr << "ERROR: Can't set format (" << snd_strerror (err) << ")" << endl;
     }
 
-    if (err = snd_pcm_hw_params_set_channels(PcmHandle, params, 1) < 0) {
+    if ((err = snd_pcm_hw_params_set_channels(PcmHandle, params, 1)) < 0) {
         cerr << "ERROR: Can't set channels number (" << snd_strerror (err) << ")" << endl;
     }
     unsigned int rate = RATE;
-    if (err = snd_pcm_hw_params_set_rate_near(PcmHandle, params, &rate, 0) < 0) {
+    if ((err = snd_pcm_hw_params_set_rate_near(PcmHandle, params, &rate, 0)) < 0) {
         cerr << "ERROR: Can't set rate (" << snd_strerror (err) << ")" << endl;
     }
 
     cout << "snd_pcm_hw_params_set_rate_near to:" << rate << endl;
 
     /* Write parameters */
-    if (err = snd_pcm_hw_params(PcmHandle, params) < 0) {
+    if ((err = snd_pcm_hw_params(PcmHandle, params)) < 0) {
         cerr << "ERROR: Can't set hardware parameters (" << snd_strerror (err) << ")" << endl;
+        snd_pcm_close(PcmHandle);
+        return false;
     }
-    return err;
+
+    // Publish the handle under lock so Stop() can safely drop it to unblock us
+    lock_guard<mutex> Lock(mMutexPcm);
+    if (bRecord) {
+        mRecordPcmHandle = PcmHandle;
+    }
+    else {
+        mPlayPcmHandle = PcmHandle;
+    }
+    return true;
 }
 
-void CAudio::StopPcm(bool bRecord)
+// Drop and close a PCM handle. Called from the worker thread only.
+void CAudio::ClosePcm(bool bRecord)
 {
-    snd_pcm_t* PcmHandle = bRecord ? mRecordPcmHandle : mPlayPcmHandle;
-    cout << "Stop playing" << endl;
+    cout << (bRecord ? "Stop recording" : "Stop playing") << endl;
 
-    int err;
-    // Drop PCM to avoid blocking drain if necessary
-    if (err = snd_pcm_drop(PcmHandle) < 0) {
-        cerr << "ERROR: snd_pcm_drop (" << snd_strerror (err) << ")" << endl;
-    }
-    if (err = snd_pcm_drain(PcmHandle) < 0) {
-        cerr << "ERROR: snd_pcm_drain (" << snd_strerror (err) << ")" << endl;
-    }
-    if (err = snd_pcm_close(PcmHandle) < 0) {
-        cerr << "ERROR: snd_pcm_close (" << snd_strerror (err) << ")" << endl;
+    // Hold mMutexPcm for the whole drop+close so it cannot race with Stop()
+    // calling snd_pcm_drop() on the same handle.
+    {
+        lock_guard<mutex> Lock(mMutexPcm);
+        snd_pcm_t* PcmHandle = bRecord ? mRecordPcmHandle : mPlayPcmHandle;
+        if (!PcmHandle) {
+            return;
+        }
+
+        int err;
+        // Drop (not drain): drop discards buffered samples and never blocks.
+        if ((err = snd_pcm_drop(PcmHandle)) < 0) {
+            cerr << "ERROR: snd_pcm_drop (" << snd_strerror (err) << ")" << endl;
+        }
+        if ((err = snd_pcm_close(PcmHandle)) < 0) {
+            cerr << "ERROR: snd_pcm_close (" << snd_strerror (err) << ")" << endl;
+        }
+
+        if (bRecord) {
+            mRecordPcmHandle = nullptr;
+        }
+        else {
+            mPlayPcmHandle = nullptr;
+        }
     }
 
     if (!bRecord) {
@@ -135,14 +156,24 @@ void CAudio::StopPcm(bool bRecord)
 }
 
 void CAudio::StartThread() {
-    if (!mThread.joinable()) {
-        mThread = thread ([this](){
-            Thread();
-        });
+    if (mbThreadRunning) {
+        return; // A worker thread is already running
     }
+    // A previous worker may have exited on its own (e.g. on a PCM error) and
+    // still be joinable: reap it before starting a new one, otherwise the
+    // "joinable" state would wrongly prevent any restart.
+    if (mThread.joinable()) {
+        mThread.join();
+    }
+    mbThreadRunning = true;
+    mThread = thread ([this](){
+        Thread();
+    });
 }
 
-// Play and record thread
+// Play and record thread.
+// Owns the PCM handles: it opens/closes them to match the desired mbPlay /
+// mbRecord state and recovers from (or tears down) per-stream errors on its own.
 void CAudio::Thread()
 {
     int err;
@@ -151,7 +182,28 @@ void CAudio::Thread()
     cout << "Start Thread" << endl;
 
     while (mbPlay || mbRecord) {
-        if (mbPlay) {
+        // Reconcile open PCMs with the desired state
+        if (mbPlay && !mPlayPcmHandle) {
+            if (OpenPcm(false)) {
+                AudioOnOff(true);
+            }
+            else {
+                mbPlay = false;     // Could not open playback, give up this stream
+            }
+        }
+        else if (!mbPlay && mPlayPcmHandle) {
+            ClosePcm(false);
+        }
+        if (mbRecord && !mRecordPcmHandle) {
+            if (!OpenPcm(true)) {
+                mbRecord = false;   // Could not open capture, give up this stream
+            }
+        }
+        else if (!mbRecord && mRecordPcmHandle) {
+            ClosePcm(true);
+        }
+
+        if (mbPlay && mPlayPcmHandle) {
             if (mSamplesQueue.empty() && !mbRecord) {
                 // Wait for samples
                 this_thread::sleep_for(chrono::milliseconds(1));
@@ -162,45 +214,60 @@ void CAudio::Thread()
                 pPlaySample = mSamplesQueue.front();
                 mSamplesQueue.pop();
                 mMutexQueue.unlock();
-                
-                if (err = snd_pcm_writei(mPlayPcmHandle, pPlaySample->buf, FRAME_BY_SAMPLE) == -EPIPE) {
+
+                err = snd_pcm_writei(mPlayPcmHandle, pPlaySample->buf, FRAME_BY_SAMPLE);
+                if (err == -EPIPE) {
                     cout << "XRUN " << endl;
                     this_thread::sleep_for(chrono::milliseconds(80));
                     snd_pcm_prepare(mPlayPcmHandle);
-                } else if (err < 0) {
+                }
+                else if (err < 0) {
                     cerr << "ERROR. Can't write to PCM device (" << snd_strerror(err) << ")" << endl;
-                    break;
+                    mbPlay = false;     // Tear down playback only; recording keeps going
                 }
             }
         }
-        
-        if (mbRecord) {
+
+        if (mbRecord && mRecordPcmHandle) {
             CAudioSample::Ptr pSample (new CAudioSample());
-            if ((err = snd_pcm_readi (mRecordPcmHandle, pSample->buf, FRAME_BY_SAMPLE)) != FRAME_BY_SAMPLE) {
+            err = snd_pcm_readi (mRecordPcmHandle, pSample->buf, FRAME_BY_SAMPLE);
+            if (err == -EPIPE) {
+                cerr << "OVERRUN on capture" << endl;
+                snd_pcm_prepare(mRecordPcmHandle);  // Recoverable, keep recording
+            }
+            else if (err < 0) {
                 cerr << "read from audio interface failed (" << snd_strerror (err) << ")" << endl;
-                break;
+                mbRecord = false;   // Tear down recording only; playback keeps going
             }
-            if (pPlaySample) {
-                CAudioSample::Ptr pSampleWithoutEcho (new CAudioSample());
-                speex_echo_cancellation(mEchoState, (spx_int16_t*)pSample->buf, (spx_int16_t*)pPlaySample->buf, (spx_int16_t*)pSampleWithoutEcho->buf);
-                pSample = pSampleWithoutEcho;
+            else if (err == FRAME_BY_SAMPLE) {
+                if (pPlaySample) {
+                    CAudioSample::Ptr pSampleWithoutEcho (new CAudioSample());
+                    speex_echo_cancellation(mEchoState, (spx_int16_t*)pSample->buf, (spx_int16_t*)pPlaySample->buf, (spx_int16_t*)pSampleWithoutEcho->buf);
+                    pSample = pSampleWithoutEcho;
+                }
+
+                HttpServer.SendMessage(pSample->buf, SAMPLE_SIZE);
+                Udp.Send(pSample->buf, SAMPLE_SIZE);
             }
-            
-            HttpServer.SendMessage(pSample->buf, SAMPLE_SIZE);
-            Udp.Send(pSample->buf, SAMPLE_SIZE);
+            // else: short read, skip this sample
         }
     }
+
+    // Loop ended (both streams stopped or errored): release any handle still open.
+    if (mPlayPcmHandle) {
+        ClosePcm(false);
+    }
+    if (mRecordPcmHandle) {
+        ClosePcm(true);
+    }
+
+    mbThreadRunning = false;
 }
 
-// Start recording
+// Request recording. The worker thread opens the PCM and starts capturing.
 void CAudio::Record()
 {
     if (!mbRecord) {
-        const char* name = Config.GetString("sound-card-rec").c_str();
-        if ('\0' == name[0]) {
-            name = "default";
-        }
-        StartPcm(name, true);
         mbRecord = true;
         StartThread();
     }
@@ -210,20 +277,29 @@ void CAudio::Record()
 void CAudio::Stop()
 {
     cout << "Audio stop..." << endl;
-    bool bWasPlaying = mbPlay;
-    bool bWasRecording = mbRecord;
     mbPlay = false;
     mbRecord = false;
+
+    // Unblock the worker thread before joining it: a blocking snd_pcm_writei /
+    // snd_pcm_readi will NOT return just because the flags above changed, so we
+    // drop the PCM(s) to force any in-progress call to return. Without this the
+    // join() below could block for a long time and freeze the io_service thread.
+    // The lock serializes with the worker's own open/close of these handles.
+    {
+        lock_guard<mutex> Lock(mMutexPcm);
+        if (mPlayPcmHandle) {
+            snd_pcm_drop(mPlayPcmHandle);
+        }
+        if (mRecordPcmHandle) {
+            snd_pcm_drop(mRecordPcmHandle);
+        }
+    }
+
     if (mThread.joinable()) {
         mThread.join();
     }
-    if (bWasPlaying) {
-        StopPcm(false);
-    }
-    if (bWasRecording) {
-        StopPcm(true);
-    }
-    
+    // The worker closes the PCM handles itself on the way out.
+
     mMutexQueue.lock();
     while (!mSamplesQueue.empty()) {
         mSamplesQueue.pop();
