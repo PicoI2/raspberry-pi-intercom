@@ -3,31 +3,60 @@
 <head>
     <title>rpi-intercom</title>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <link rel="stylesheet" href="style.css"/>
     <script src="vue.global.prod.js"></script>
 </head>
 <body>
-    <div id="app" v-no-drag-drop>
-        <img @click="reloadVideo()" class="video" :src="videoSrc"><br>
-        <span :style="{ color: message.color }">{{ message.text }}</span><br>
-        <div class="big-buttons">
-            <button @click="stopring(true)"><span class="glyphicon">&#xe123; </span>Stop ringing</button>
-            <button @click="listen(true)" :disabled="listening"><span class="glyphicon">&#xe035; </span>Listen</button>
-            <button @click="speak(true)" :disabled="recording"><span class="glyphicon">&#xe038; </span>Speak</button>
-            <button @click="dooropen(true)"><span class="glyphicon">&#xe013; </span>Open door</button>
-            <button @click="hangup(true)" :disabled="!listening && !recording"><span class="glyphicon">&#xe036; </span>Hangup</button>
-        </div>
-        <br><br>
-        <span :style="{ color: bPasswordOk ? 'green' : 'red' }">Password: </span> <input type="password" v-model="password">
-        <button v-if="!bPasswordOk" @click="sendPassword(true)"><span class="glyphicon">&#xe113; </span>Send password</button>
-        <button v-if="bPasswordOk && !bPasswordSaved" @click="savePassword(true)"><span class="glyphicon">&#xe172; </span>Save password</button>
-        <button v-if="bPasswordOk" @click="disconnect(true)"><span class="glyphicon">&#xe014; </span>Disconnect</button>
-        <br><br>
-        <span v-if="!mbModeClient" style="color: white">Audio input: </span>
-        <select v-model="deviceId" @change="saveDeviceId()">
-            <option v-for="device in devices" :key="device.deviceId" :value="device.deviceId">{{ device.kind + ' ' + device.label }}</option>
-        </select><br>
+    <div id="app" class="app" v-no-drag-drop>
+        <main class="stage">
+            <div class="video-wrap">
+                <img @click="reloadVideo()" class="video" :src="videoSrc" alt="Tap to reload video">
+                <span class="status" :class="statusClass">
+                    <span class="status-dot"></span>{{ message.text }}
+                </span>
+            </div>
+
+            <div class="big-buttons">
+                <button class="btn btn-stop" :class="{ pulse: ringing }" @click="stopring(true)">
+                    <span class="glyphicon">&#xe123;</span><span class="label">Stop ringing</span>
+                </button>
+                <button class="btn btn-listen" :class="{ active: listening }" @click="listen(true)" :disabled="listening">
+                    <span class="glyphicon">&#xe035;</span><span class="label">{{ listening ? 'Listening' : 'Listen' }}</span>
+                </button>
+                <button class="btn btn-speak" :class="{ active: recording }" @click="speak(true)" :disabled="recording">
+                    <span class="glyphicon">&#xe038;</span><span class="label">{{ recording ? 'Speaking' : 'Speak' }}</span>
+                </button>
+                <button class="btn btn-door" @click="dooropen(true)">
+                    <span class="glyphicon">&#xe013;</span><span class="label">Open door</span>
+                </button>
+                <button class="btn btn-hangup" @click="hangup(true)" :disabled="!listening && !recording">
+                    <span class="glyphicon">&#xe036;</span><span class="label">Hangup</span>
+                </button>
+            </div>
+        </main>
+
+        <footer class="settings">
+            <div class="setting-row password-row">
+                <span class="setting-label" :class="bPasswordOk ? 'ok' : 'bad'">Password</span>
+                <input class="text-input" type="password" v-model="password" placeholder="••••••">
+                <button class="btn-sm" v-if="!bPasswordOk" @click="sendPassword(true)">
+                    <span class="glyphicon">&#xe113;</span> Send
+                </button>
+                <button class="btn-sm" v-if="bPasswordOk && !bPasswordSaved" @click="savePassword(true)">
+                    <span class="glyphicon">&#xe172;</span> Save
+                </button>
+                <button class="btn-sm" v-if="bPasswordOk" @click="disconnect(true)">
+                    <span class="glyphicon">&#xe014;</span> Disconnect
+                </button>
+            </div>
+            <div class="setting-row" v-if="!mbModeClient">
+                <span class="setting-label">Audio input</span>
+                <select class="text-input" v-model="deviceId" @change="saveDeviceId()">
+                    <option v-for="device in devices" :key="device.deviceId" :value="device.deviceId">{{ device.kind + ' ' + device.label }}</option>
+                </select>
+            </div>
+        </footer>
     </div>
     <script src="application.js"></script>
 </body>

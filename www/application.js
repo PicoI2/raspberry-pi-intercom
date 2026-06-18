@@ -36,7 +36,17 @@ const app = createApp({
             bAudioBusy: false,
             devices: [],
             deviceId: null,
+            ringing: false,
         };
+    },
+
+    computed: {
+        // Map the status message colour onto the status-pill style classes
+        statusClass() {
+            if ("green" == this.message.color) return "ok";
+            if ("red" == this.message.color) return "bad";
+            return "";
+        },
     },
 
     created() {
@@ -71,18 +81,24 @@ const app = createApp({
             this.message.color = "red";
         });
 
-        // List available "input devices". Useful for chrome but not for firefox
-        navigator.mediaDevices.enumerateDevices().then((devices) => {
-            devices.forEach((device) => {
-                if (device.kind == "audioinput" && device.deviceId != "default") {
-                    this.devices.push(device);
-                }
+        // List available "input devices". Useful for chrome but not for firefox.
+        // navigator.mediaDevices is undefined in insecure (non-https) contexts.
+        if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+            navigator.mediaDevices.enumerateDevices().then((devices) => {
+                devices.forEach((device) => {
+                    if (device.kind == "audioinput" && device.deviceId != "default") {
+                        this.devices.push(device);
+                    }
+                });
+                console.log("devices:", this.devices);
+                // Read device ID in localStorage
+                this.deviceId = localStorage.getItem("deviceId");
+                console.log("this.deviceId:", this.deviceId);
             });
-            console.log("devices:", this.devices);
-            // Read device ID in localStorage
+        }
+        else {
             this.deviceId = localStorage.getItem("deviceId");
-            console.log("this.deviceId:", this.deviceId);
-        });
+        }
 
         // At startup, load saved password
         this.password = localStorage.getItem("password");
@@ -200,6 +216,7 @@ const app = createApp({
         // Ring (server mode only)
         ring() {
             this.pauseAudioRing();
+            this.ringing = true;
             state.audioRing = new Audio("ring.wav");
             state.audioRing.play();
         },
@@ -218,6 +235,7 @@ const app = createApp({
 
         // Pause audio ring
         pauseAudioRing() {
+            this.ringing = false;
             try {
                 if (state.audioRing) state.audioRing.pause();
             }
