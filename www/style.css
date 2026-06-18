@@ -11,8 +11,7 @@
     --text: #e8eaed;
     --muted: #9aa0a6;
     --stop: #f0a020;
-    --listen: #3b82f6;
-    --speak: #14b8a6;
+    --talk: #3b82f6;
     --door: #22c55e;
     --hangup: #ef4444;
     --ok: #22c55e;
@@ -146,8 +145,7 @@ body {
 
 /* Color accents per action */
 .btn-stop   { --accent: var(--stop); }
-.btn-listen { --accent: var(--listen); }
-.btn-speak  { --accent: var(--speak); }
+.btn-talk   { --accent: var(--talk); }
 .btn-door   { --accent: var(--door); }
 .btn-hangup { --accent: var(--hangup); }
 .btn .glyphicon { color: var(--accent); }

@@ -21,11 +21,8 @@
                 <button class="btn btn-stop" :class="{ pulse: ringing }" @click="stopring(true)">
                     <span class="glyphicon">&#xe123;</span><span class="label">Stop ringing</span>
                 </button>
-                <button class="btn btn-listen" :class="{ active: listening }" @click="listen(true)" :disabled="listening">
-                    <span class="glyphicon">&#xe035;</span><span class="label">{{ listening ? 'Listening' : 'Listen' }}</span>
-                </button>
-                <button class="btn btn-speak" :class="{ active: recording }" @click="speak(true)" :disabled="recording">
-                    <span class="glyphicon">&#xe038;</span><span class="label">{{ recording ? 'Speaking' : 'Speak' }}</span>
+                <button class="btn btn-talk" :class="{ active: recording }" @click="speak(true)" :disabled="recording">
+                    <span class="glyphicon">&#xe145;</span><span class="label">{{ recording ? 'Talking' : 'Talk' }}</span>
                 </button>
                 <button class="btn btn-door" @click="dooropen(true)">
                     <span class="glyphicon">&#xe013;</span><span class="label">Open door</span>
