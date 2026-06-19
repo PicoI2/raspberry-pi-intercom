@@ -8,7 +8,8 @@
     <script src="vue.global.prod.js"></script>
 </head>
 <body>
-    <div id="app" class="app" v-no-drag-drop>
+    <div id="app">
+      <div class="app" v-no-drag-drop>
         <main class="stage">
             <div class="video-wrap">
                 <img @click="reloadVideo()" class="video" :src="videoSrc" alt="Tap to reload video">
@@ -54,6 +55,7 @@
                 </select>
             </div>
         </footer>
+      </div>
     </div>
     <script src="application.js"></script>
 </body>
