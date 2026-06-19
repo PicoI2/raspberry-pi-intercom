@@ -1,6 +1,7 @@
 #pragma once
 
 #include <set>
+#include <mutex>
 #include <iostream>
 #include <boost/asio.hpp>
 #include <boost/signals2.hpp>
@@ -41,6 +42,7 @@ private:
 // Members values
     WSServer mServer;
     ConnectionList mClientList;
+    mutex mClientListMutex;     // Protects mClientList (accessed from the io_service thread and the audio thread)
 
     boost::asio::io_service* mpIoService;
     boost::asio::deadline_timer* mpTimer;

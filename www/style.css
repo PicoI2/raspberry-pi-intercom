@@ -2,35 +2,242 @@
     font-family: "glyphicon";
     src: url('glyphicons-halflings-regular.woff');  /* https://glyphicons.bootstrapcheatsheets.com/# */
 }
-body {
-    background-color: black;
-    width: 96wh;
-    height: 96vh;
-    font-family: Arial, Helvetica, sans-serif;
+
+:root {
+    --bg: #0d0f12;
+    --surface: #1a1d23;
+    --surface-2: #23272f;
+    --border: #313640;
+    --text: #e8eaed;
+    --muted: #9aa0a6;
+    --stop: #f0a020;
+    --talk: #3b82f6;
+    --door: #22c55e;
+    --hangup: #ef4444;
+    --ok: #22c55e;
+    --bad: #ef4444;
+    --radius: 16px;
 }
+
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+    height: 100%;
+}
+
+body {
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: "Segoe UI", Roboto, Arial, Helvetica, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+}
+
 .glyphicon {
     font-family: "glyphicon";
+    line-height: 1;
 }
-.big-buttons {
+
+/* ---- Layout ---- */
+.app {
+    height: 100vh;
+    height: 100dvh;
     display: flex;
-    height: 18%;
-    justify-content: space-around;
-    align-items: stretch;
+    flex-direction: column;
+    gap: 14px;
+    padding: max(14px, env(safe-area-inset-top)) 14px max(14px, env(safe-area-inset-bottom));
+    user-select: none;
+    -webkit-user-select: none;
 }
-.big-buttons > button {
-    font-size: 2vw;
-    flex-basis: 19%;
-    flex-shrink: 1;
-    white-space: nowrap;
+
+.stage {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
 }
-.big-buttons > button > .glyphicon {
-    display: block;
-    font-size: 5vw;
+
+/* ---- Video ---- */
+.video-wrap {
+    flex: 1;
+    min-height: 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
 }
 .video {
-    width: 96%;
-    max-height: 72%;
-    height: auto;
-    display: block;
-    margin: auto;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    cursor: pointer;
+}
+.status {
+    position: absolute;
+    left: 12px;
+    bottom: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(6px);
+    border-radius: 999px;
+}
+.status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--muted);
+}
+.status.ok    .status-dot { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+.status.bad   .status-dot { background: var(--bad); box-shadow: 0 0 8px var(--bad); }
+.status.ok    { color: #d7ffe2; }
+.status.bad   { color: #ffd9d9; }
+
+/* ---- Big action buttons ---- */
+.big-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 12px;
+}
+.btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 96px;
+    padding: 14px 8px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: transform .08s ease, background .15s ease, box-shadow .15s ease, opacity .15s ease;
+}
+.btn .glyphicon {
+    font-size: 34px;
+}
+.btn .label {
+    white-space: nowrap;
+}
+.btn:active:not(:disabled) {
+    transform: scale(0.96);
+}
+.btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+/* Color accents per action */
+.btn-stop   { --accent: var(--stop); }
+.btn-talk   { --accent: var(--talk); }
+.btn-door   { --accent: var(--door); }
+.btn-hangup { --accent: var(--hangup); }
+.btn .glyphicon { color: var(--accent); }
+.btn:active:not(:disabled) {
+    background: var(--surface-2);
+}
+
+/* Active call states: filled + glow */
+.btn.active {
+    opacity: 1;
+    background: color-mix(in srgb, var(--accent) 22%, var(--surface));
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 45%, transparent),
+                0 0 18px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+/* Pulse the Stop button while ringing */
+.btn.pulse {
+    background: color-mix(in srgb, var(--stop) 25%, var(--surface));
+    border-color: var(--stop);
+    animation: pulse 1s ease-in-out infinite;
+}
+@keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--stop) 55%, transparent); }
+    50%      { box-shadow: 0 0 0 8px color-mix(in srgb, var(--stop) 0%, transparent); }
+}
+
+/* ---- Settings footer ---- */
+.settings {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+}
+.setting-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+.setting-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+    min-width: 92px;
+}
+.setting-label.ok  { color: var(--ok); }
+.setting-label.bad { color: var(--bad); }
+
+.text-input {
+    flex: 1;
+    min-width: 120px;
+    height: 44px;
+    padding: 0 12px;
+    font-size: 16px;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+}
+.text-input:focus {
+    outline: none;
+    border-color: var(--listen);
+}
+
+.btn-sm {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 44px;
+    padding: 0 16px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+.btn-sm .glyphicon {
+    font-size: 16px;
+    color: var(--muted);
+}
+.btn-sm:active {
+    transform: scale(0.97);
+}
+
+/* Stack labels above controls on narrow / portrait screens */
+@media (max-width: 480px) {
+    .setting-label { min-width: 100%; }
+    .btn .label { font-size: 14px; }
+    .status { font-size: 13px; }
 }
