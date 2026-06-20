@@ -336,6 +336,16 @@ const app = createApp({
             this.get('/dooropen');
         },
 
+        // Toggle between speaking and hanging up (single merged button)
+        toggleTalk(bip) {
+            if (this.recording) {
+                this.hangup(bip);
+            }
+            else {
+                this.speak(bip);
+            }
+        },
+
         // Hangup
         hangup(bip) {
             if (bip) {

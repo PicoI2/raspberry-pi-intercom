@@ -22,14 +22,11 @@
                 <button class="btn btn-stop" :class="{ pulse: ringing }" @click="stopring(true)">
                     <span class="glyphicon">&#xe123;</span><span class="label">Stop ringing</span>
                 </button>
-                <button class="btn btn-talk" :class="{ active: recording }" @click="speak(true)" :disabled="recording">
-                    <span class="glyphicon">&#xe038;</span><span class="label">{{ recording ? 'Talking' : 'Talk' }}</span>
+                <button class="btn" :class="recording ? 'btn-hangup' : 'btn-talk'" @click="toggleTalk(true)">
+                    <span class="glyphicon" v-if="recording">&#xe036;</span><span class="glyphicon" v-else>&#xe038;</span><span class="label">{{ recording ? 'Hangup' : 'Talk' }}</span>
                 </button>
                 <button class="btn btn-door" @click="dooropen(true)">
                     <span class="glyphicon">&#xe013;</span><span class="label">Open door</span>
-                </button>
-                <button class="btn btn-hangup" @click="hangup(true)" :disabled="!listening && !recording">
-                    <span class="glyphicon">&#xe036;</span><span class="label">Hangup</span>
                 </button>
             </div>
         </main>
