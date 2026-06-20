@@ -63,6 +63,7 @@ aplay -l to list available cards
 - sound-card-rec (both)
 arecord -l to list available cards, could be 'default', 'plughw:1'
 - password (both)
+- video-src (both)
 password to use web interface
 - server-ip (client)
 - server-udp-port (client)

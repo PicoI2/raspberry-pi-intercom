@@ -198,7 +198,7 @@ string CMain::OnRequest (const WSRequest& aHttpRequest) {
             JsonConfig["mode"] = Config.GetString("mode");
             JsonConfig["frameBySample"] = FRAME_BY_SAMPLE;
             JsonConfig["rate"] = RATE;
-            JsonConfig["videoSrc"] = mbClientMode ? Config.GetString("server-ip") : "";
+            JsonConfig["videoSrc"] = Config.GetString("video-src");
             Result = JsonConfig.toStyledString();
         }
         else if ("/password_ok" == aHttpRequest.get_uri()) {

@@ -67,12 +67,15 @@ const app = createApp({
                     this.mbModeClient = ("client" == config.mode);
                     state.frameBySample = config.frameBySample;
                     state.rate = config.rate;
-                    if (this.mbModeClient) {
-                        this.videoSrc = `http://${config.videoSrc}:8081`;
+                    if (config.videoSrc) {
+                        this.videoSrc = config.videoSrc;
                     }
                     if (!this.mbModeClient) {
                         // Start websocket
                         state.ws = this.connect();
+                    }
+                    else {
+                        this.message.text = "";
                     }
                 }
             }
