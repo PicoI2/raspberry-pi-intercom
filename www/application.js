@@ -454,9 +454,12 @@ app.directive("no-drag-drop", {
             event.stopPropagation();
             vm.get("/backlighton");
         });
+        // Use the capture phase so the handler fires for any click inside the
+        // directive (e.g. the video image), regardless of how child elements
+        // handle/stop the event during the bubbling phase.
         el.addEventListener("click", () => {
             vm.get("/backlighton");
-        });
+        }, true);
     },
 });
 
